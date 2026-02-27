@@ -1,15 +1,14 @@
 import { computeExpectedPoints } from "./transformEngine.js";
 
 export function createAppState({ config, src }) {
-  const originalPoints =
-    config?.original?.points ?? [];
+  const originalPoints = config?.original?.points ?? [];
 
   const expectedPoints = computeExpectedPoints(
     originalPoints,
     config?.transform
   );
 
-  return {
+  const state = {
     config,
     src,
     expectedPoints,
@@ -17,4 +16,14 @@ export function createAppState({ config, src }) {
     showSolution: false,
     feedback: ""
   };
+
+  state.undo = function () {
+    state.studentPoints.pop();
+  };
+
+  state.reset = function () {
+    state.studentPoints = [];
+  };
+
+  return state;
 }

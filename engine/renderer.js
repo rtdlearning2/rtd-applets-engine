@@ -84,9 +84,27 @@ export function render(state) {
   container.innerHTML = `
     <div style="padding:16px;">
       <h2>${config.title}</h2>
+
+      <div style="margin-bottom:10px;">
+        <button id="undoBtn">Undo</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+
       <p>Expected points: ${expectedPoints.length}</p>
       <p>Student points: ${studentPoints.length}</p>
+
       ${svg}
     </div>
   `;
+
+  // ADD event listeners (inside render)
+  document.getElementById("undoBtn")?.addEventListener("click", () => {
+    state.undo();
+    render(state);
+  });
+
+  document.getElementById("resetBtn")?.addEventListener("click", () => {
+    state.reset();
+    render(state);
+  });
 }
