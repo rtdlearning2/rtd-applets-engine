@@ -13,11 +13,6 @@ export function render(state) {
   // Raw clicks (for counters / attempts)
   const rawStudentPoints = state.studentPoints;
 
-  // Ordered view (for drawing)
-  const studentPoints = state.orderedStudentPoints?.length
-    ? state.orderedStudentPoints
-    : rawStudentPoints;
-
   const xmin = config.grid.xmin;
   const xmax = config.grid.xmax;
   const ymin = config.grid.ymin;
@@ -72,20 +67,34 @@ export function render(state) {
                     fill="#2563eb"/>`;
   });
 
-  // Student graph (red) — draw from ordered points when available
-  if (studentPoints.length > 0) {
-    svg += `<path d="${buildPath(studentPoints)}"
+  // ===============================
+  // Student rendering (updated)
+  // ===============================
+
+  // 1. Draw all raw student clicks (small, faint dots)
+  state.studentPoints.forEach(p => {
+    svg += `<circle cx="${toSvgX(p[0])}"
+                    cy="${toSvgY(p[1])}"
+                    r="3"
+                    fill="#dc2626"
+                    opacity="0.35" />`;
+  });
+
+  // 2. Draw clean ordered polyline (if 2+ matched points)
+  if (state.orderedStudentPoints.length > 1) {
+    svg += `<path d="${buildPath(state.orderedStudentPoints)}"
                  fill="none"
                  stroke="#dc2626"
-                 stroke-width="2"/>`;
-
-    studentPoints.forEach(p => {
-      svg += `<circle cx="${toSvgX(p[0])}"
-                      cy="${toSvgY(p[1])}"
-                      r="5"
-                      fill="#dc2626"/>`;
-    });
+                 stroke-width="3"/>`;
   }
+
+  // 3. Draw matched ordered points on top (solid)
+  state.orderedStudentPoints.forEach(p => {
+    svg += `<circle cx="${toSvgX(p[0])}"
+                    cy="${toSvgY(p[1])}"
+                    r="5"
+                    fill="#dc2626" />`;
+  });
 
   // ✅ Solution overlay — thicker and green
   if (state.showSolution && state.expectedPoints.length > 0) {
@@ -124,7 +133,6 @@ export function render(state) {
       </div>
 
       <p>Expected points: ${expectedPoints.length}</p>
-      <!-- Optional UI fix: show raw click count -->
       <p>Student points: ${rawStudentPoints.length}</p>
 
       ${svg}

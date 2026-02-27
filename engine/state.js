@@ -17,9 +17,14 @@ export function createAppState({ config, src }) {
     feedback: ""
   };
 
-  state.undo = function () {
-    state.studentPoints.pop();
-  };
+state.undo = function () {
+  state.studentPoints.pop();
+  state.orderedStudentPoints = orderStudentPoints(
+    state.expectedPoints,
+    state.studentPoints
+  );
+  state.feedback = "";
+};
 
   state.enableSolution = function () {
     state.showSolution = true;
