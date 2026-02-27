@@ -1,5 +1,11 @@
 // app.js (no template strings)
 
+let APP_STATE = {
+  config: null,
+  src: null,
+  showSolution: false
+};
+
 async function fetchJson(url) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("Could not load config (" + res.status + ") from " + url);
@@ -65,8 +71,138 @@ function buildPathData(points, toSvgX, toSvgY) {
   return pathData.trim();
 }
 
+/**
+ * Inject the instructions + controls card into the DOM exactly as specified
+ * (so you can add it in index.html later if you prefer).
+ *
+ * Placement:
+ * - inside <main class="wrap"> if present
+ * - immediately ABOVE <div id="app">
+ */
+function ensureInstructionsCard() {
+  const appEl = document.getElementById("app");
+  if (!appEl) return null;
+
+  let card = document.getElementById("instructionsCard");
+  if (card) return card;
+
+  card = document.createElement("div");
+  card.className = "card";
+  card.id = "instructionsCard";
+  card.setAttribute("style", "margin-bottom: 12px;");
+
+  // This markup matches what you provided
+  card.innerHTML =
+    '<div id="prompt" style="font-size:16px; font-weight:600;"></div>' +
+    '<div id="howto" class="muted" style="margin-top:6px;"></div>' +
+    '<div class="muted" style="margin-top:6px;">' +
+      "Plot <b>exactly 5 points</b>, from left to right. Points will snap when close." +
+    "</div>" +
+    '<div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">' +
+      '<button id="btnUndo" type="button">Undo</button>' +
+      '<button id="btnReset" type="button">Reset</button>' +
+      '<button id="btnSubmit" type="button">Submit</button>' +
+      '<button id="btnSeeSolution" type="button" style="display:none;">See solution</button>' +
+    "</div>" +
+    '<div id="feedback" style="margin-top:12px;"></div>';
+
+  // Insert above app, preferably within main.wrap
+  const wrapMain = appEl.closest("main.wrap");
+  if (wrapMain) {
+    wrapMain.insertBefore(card, appEl);
+  } else {
+    // Fallback: insert right before #app wherever it is
+    appEl.parentNode.insertBefore(card, appEl);
+  }
+
+  return card;
+}
+
+function setFeedback(html) {
+  const feedbackEl = document.getElementById("feedback");
+  if (!feedbackEl) return;
+  feedbackEl.innerHTML = html || "";
+}
+
+function defaultHowtoForTransform(transform) {
+  if (!transform || !transform.type) return "";
+
+  if (transform.type === "reflect_x") {
+    return "Reflect the graph across the <b>x-axis</b>: keep x-values the same and negate y-values.";
+  }
+  if (transform.type === "reflect_y") {
+    return "Reflect the graph across the <b>y-axis</b>: keep y-values the same and negate x-values.";
+  }
+  return "";
+}
+
+/**
+ * Fill the instructions card fields from config (if present) and wire controls.
+ * Note: Plotting/snap/undo point logic isn’t implemented yet in this file—
+ * this step just creates the UI “place to show instructions + controls” and
+ * sets up basic submit/solution flow.
+ */
+function setupInstructionsUI(config) {
+  ensureInstructionsCard();
+
+  const promptEl = document.getElementById("prompt");
+  const howtoEl = document.getElementById("howto");
+  const btnUndo = document.getElementById("btnUndo");
+  const btnReset = document.getElementById("btnReset");
+  const btnSubmit = document.getElementById("btnSubmit");
+  const btnSeeSolution = document.getElementById("btnSeeSolution");
+
+  // Populate text
+  const promptText = (config && config.prompt) ? String(config.prompt) :
+    ((config && config.title) ? String(config.title) : "Complete the transformation");
+  if (promptEl) promptEl.textContent = promptText;
+
+  const howtoHtml = (config && config.howto) ? String(config.howto) : defaultHowtoForTransform(config && config.transform);
+  if (howtoEl) howtoEl.innerHTML = howtoHtml;
+
+  // Reset state/UI
+  APP_STATE.showSolution = false;
+  if (btnSeeSolution) btnSeeSolution.style.display = "none";
+  setFeedback("");
+
+  // Wire buttons (placeholder behavior until plotting is added)
+  if (btnUndo) {
+    btnUndo.onclick = function () {
+      setFeedback('<div class="muted">Undo is ready to be wired to point-plotting (not yet implemented in this app.js).</div>');
+    };
+  }
+
+  if (btnReset) {
+    btnReset.onclick = function () {
+      APP_STATE.showSolution = false;
+      if (btnSeeSolution) btnSeeSolution.style.display = "none";
+      setFeedback('<div class="muted">Reset complete (point-plotting reset will be added next).</div>');
+      if (APP_STATE.config) renderConfig(APP_STATE.config, APP_STATE.src);
+    };
+  }
+
+  if (btnSubmit) {
+    btnSubmit.onclick = function () {
+      // Until point plotting exists, submit just reveals the "See solution" option.
+      setFeedback(
+        '<div style="font-weight:600;">Submitted.</div>' +
+        '<div class="muted" style="margin-top:6px;">You can now view the solution.</div>'
+      );
+      if (btnSeeSolution) btnSeeSolution.style.display = "inline-block";
+    };
+  }
+
+  if (btnSeeSolution) {
+    btnSeeSolution.onclick = function () {
+      APP_STATE.showSolution = true;
+      setFeedback('<div style="font-weight:600;">Solution shown.</div>');
+      if (APP_STATE.config) renderConfig(APP_STATE.config, APP_STATE.src);
+    };
+  }
+}
+
 function renderConfig(config, src) {
-  // --- NEW: Normalize config so "transform" exists at the top level for reflect-x activities ---
+  // --- Normalize config so "transform" exists at the top level for reflect-x activities ---
   // This matches the desired JSON shape:
   // {
   //   "title": "...",
@@ -88,6 +224,9 @@ function renderConfig(config, src) {
   } catch (e) {
     // If anything weird happens, don't block rendering; just proceed as-is.
   }
+
+  // Ensure instructions UI exists + updated (safe to call repeatedly)
+  setupInstructionsUI(config);
 
   setHeader((config && config.title) ? config.title : "Untitled activity", "Loaded from: " + src);
 
@@ -154,9 +293,9 @@ function renderConfig(config, src) {
   // Points
   const originalPoints = config.original.points;
 
-  // --- NEW: Expected/ghost graph (transformed) ---
-  // Draw FIRST so the blue sits on top.
-  if (config.transform && config.transform.type) {
+  // --- Expected/ghost graph (transformed) ---
+  // NOW: Only draw when solution is enabled (after clicking "See solution")
+  if (APP_STATE.showSolution && config.transform && config.transform.type) {
     const expectedPoints = applyTransform(originalPoints, config.transform);
 
     const expectedPath = buildPathData(expectedPoints, toSvgX, toSvgY);
@@ -200,6 +339,7 @@ async function main() {
 
   if (!src) {
     setHeader("No config specified", "Add ?src=... to the URL");
+    ensureInstructionsCard();
     const appEl = document.getElementById("app");
     if (appEl) {
       appEl.innerHTML =
@@ -210,6 +350,9 @@ async function main() {
   }
 
   const config = await fetchJson(src);
+  APP_STATE.config = config;
+  APP_STATE.src = src;
+
   renderConfig(config, src);
 }
 
