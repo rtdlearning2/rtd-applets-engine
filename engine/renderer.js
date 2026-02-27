@@ -1,6 +1,8 @@
 // engine/renderer.js
 
-import { validateSubmission } from "./validator.js";
+import { validate } from "./validators/index.js";
+import { renderGrid } from "./gridRenderer.js";
+import { renderSeries } from "./seriesRenderer.js";
 
 export function render(state) {
   const container = document.getElementById("app");
@@ -16,31 +18,11 @@ export function render(state) {
   // Safeguard: orderedStudentPoints may not exist yet
   const orderedStudentPoints = state.orderedStudentPoints ?? [];
 
-  const xmin = config.grid.xmin;
-  const xmax = config.grid.xmax;
-  const ymin = config.grid.ymin;
-  const ymax = config.grid.ymax;
-
   const width = 600;
   const height = 600;
 
-  const xScale = width / (xmax - xmin);
-  const yScale = height / (ymax - ymin);
-
-  const toSvgX = x => (x - xmin) * xScale;
-  const toSvgY = y => height - (y - ymin) * yScale;
-
-  function buildPath(points) {
-    return points
-      .map((p, i) =>
-        (i === 0 ? "M" : "L") + toSvgX(p[0]) + " " + toSvgY(p[1])
-      )
-      .join(" ");
-  }
-
-  // Step 5.1 — shared point radius (match blue + red)
-  // Use whatever the original blue points used; in this file it was 5.
-  const POINT_R = 5;
+  // Helper to convert [x,y] to {x,y}
+  const toObj = p => ({ x: p[0], y: p[1] });
 
   let svg = `
     <svg id="graphSvg"
@@ -51,73 +33,78 @@ export function render(state) {
   `;
 
   // Grid
-  for (let x = xmin; x <= xmax; x++) {
-    const sx = toSvgX(x);
-    svg += `<line x1="${sx}" y1="0" x2="${sx}" y2="${height}" stroke="${x === 0 ? "#000" : "#eee"}"/>`;
-  }
+  svg = renderGrid(svg, state.view, { width, height }, {});
 
-  for (let y = ymin; y <= ymax; y++) {
-    const sy = toSvgY(y);
-    svg += `<line x1="0" y1="${sy}" x2="${width}" y2="${sy}" stroke="${y === 0 ? "#000" : "#eee"}"/>`;
-  }
+  // Build Series
+  const seriesList = [];
 
   // Original graph (blue)
-  svg += `<path d="${buildPath(originalPoints)}"
-               fill="none"
-               stroke="#2563eb"
-               stroke-width="2"/>`;
-
-  originalPoints.forEach(p => {
-    svg += `<circle cx="${toSvgX(p[0])}"
-                    cy="${toSvgY(p[1])}"
-                    r="${POINT_R}"
-                    fill="#2563eb"/>`;
-  });
-
-  // ===============================
-  // Student rendering (Step 5.x)
-  // ===============================
-
-  // Step 5.2 — Attempt line: connects raw clicks in the order clicked (faint)
-  if (rawStudentPoints.length > 1) {
-    svg += `<path d="${buildPath(rawStudentPoints)}"
-                 fill="none"
-                 stroke="#dc2626"
-                 stroke-width="3"
-                 opacity="0.25" />`;
-  }
-
-  // Step 5.3 — Clean line: connects matched vertices in expected order (solid)
-  if (orderedStudentPoints.length > 1) {
-    svg += `<path d="${buildPath(orderedStudentPoints)}"
-                 fill="none"
-                 stroke="#dc2626"
-                 stroke-width="3"
-                 opacity="1" />`;
-  }
-
-  // Step 5.4 — Draw points (raw only) so we don’t leak correctness
-  rawStudentPoints.forEach(p => {
-    svg += `<circle cx="${toSvgX(p[0])}"
-                    cy="${toSvgY(p[1])}"
-                    r="${POINT_R}"
-                    fill="#dc2626" />`;
-  });
-
-  // ✅ Solution overlay — thicker and green
-  if (state.showSolution && expectedPoints.length > 0) {
-    svg += `<path d="${buildPath(expectedPoints)}"
-                 fill="none"
-                 stroke="#16a34a"
-                 stroke-width="5"/>`;
-
-    expectedPoints.forEach(p => {
-      svg += `<circle cx="${toSvgX(p[0])}"
-                      cy="${toSvgY(p[1])}"
-                      r="${POINT_R}"
-                      fill="#16a34a"/>`;
+  if (originalPoints.length > 0) {
+    const pts = originalPoints.map(toObj);
+    seriesList.push({
+      type: "polyline",
+      points: pts,
+      style: { stroke: "#2563eb", strokeWidth: 2 }
+    });
+    seriesList.push({
+      type: "points",
+      points: pts,
+      style: { fill: "#2563eb", r: 5 }
     });
   }
+
+  // Student Attempt (faint line)
+  if (rawStudentPoints.length > 1) {
+    seriesList.push({
+      type: "polyline",
+      points: rawStudentPoints.map(toObj),
+      style: { stroke: "#dc2626", strokeWidth: 3, opacity: 0.25 }
+    });
+  }
+
+  // Student Clean (solid line)
+  if (orderedStudentPoints.length > 1) {
+    const matchedLookup = new Set(
+      orderedStudentPoints.map(p => `${p[0]},${p[1]}`)
+    );
+    const cleanLinePoints = state.expectedPoints.map(toObj);
+    const cleanLineMask = state.expectedPoints.map(p =>
+      matchedLookup.has(`${p[0]},${p[1]}`)
+    );
+
+    seriesList.push({
+      type: "polyline",
+      points: cleanLinePoints,
+      segmentMask: cleanLineMask,
+      style: { stroke: "#dc2626", strokeWidth: 3, opacity: 1 }
+    });
+  }
+
+  // Student Points (raw)
+  if (rawStudentPoints.length > 0) {
+    seriesList.push({
+      type: "points",
+      points: rawStudentPoints.map(toObj),
+      style: { fill: "#dc2626", r: 5 }
+    });
+  }
+
+  // Solution overlay
+  if (state.showSolution && expectedPoints.length > 0) {
+    const pts = expectedPoints.map(toObj);
+    seriesList.push({
+      type: "polyline",
+      points: pts,
+      style: { stroke: "#16a34a", strokeWidth: 5 }
+    });
+    seriesList.push({
+      type: "points",
+      points: pts,
+      style: { fill: "#16a34a", r: 5 }
+    });
+  }
+
+  svg = renderSeries(svg, seriesList, state.view, { width, height });
 
   svg += `</svg>`;
 
@@ -126,11 +113,13 @@ export function render(state) {
       <h2>${config.title}</h2>
 
       <div style="margin-bottom:10px;">
+        <button id="zoomInBtn">Zoom In</button>
+        <button id="zoomOutBtn">Zoom Out</button>
         <button id="undoBtn">Undo</button>
         <button id="resetBtn">Reset</button>
         <button id="submitBtn">Submit</button>
         ${
-          !state.showSolution && state.lastSubmitCorrect === false
+          !state.showSolution && state.lastSubmitCorrect === false && config.feedback.showSolutionOnFail
             ? `<button id="solutionBtn">See Solution</button>`
             : ""
         }
@@ -147,6 +136,16 @@ export function render(state) {
     </div>
   `;
 
+  // Zoom
+  document.getElementById("zoomInBtn")?.addEventListener("click", () => {
+    state.zoomIn();
+    render(state);
+  });
+  document.getElementById("zoomOutBtn")?.addEventListener("click", () => {
+    state.zoomOut();
+    render(state);
+  });
+
   // Undo
   document.getElementById("undoBtn")?.addEventListener("click", () => {
     state.undo();
@@ -161,13 +160,14 @@ export function render(state) {
 
   // Submit (semantic correctness)
   document.getElementById("submitBtn")?.addEventListener("click", () => {
-    const result = validateSubmission(state);
+    const activityType = state.config?.activityType ?? "transformations";
+    const result = validate(activityType, state, state.config);
 
-    state.feedback = result.message;
-    state.lastSubmitCorrect = result.correct;
+    state.feedback = result?.details?.message ?? "";
+    state.lastSubmitCorrect = Boolean(result?.isCorrect);
 
-    if (!result.correct) {
-      state.showSolution = false;
+    if (!state.lastSubmitCorrect) {
+      state.showSolution = config.feedback.showExpectedPointsOnFail;
     }
 
     render(state);

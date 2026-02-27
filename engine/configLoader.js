@@ -1,5 +1,7 @@
 // engine/configLoader.js
 
+import { migrateConfig } from "./configMigrations.js";
+
 export function getSrcParam() {
   const params = new URLSearchParams(window.location.search);
   return params.get("src");
@@ -14,6 +16,7 @@ export async function loadConfigFromSrc() {
     throw new Error(`Could not load config (${res.status}) from ${src}`);
   }
 
-  const config = await res.json();
+  const rawConfig = await res.json();
+  const config = migrateConfig(rawConfig);
   return { config, src };
 }
