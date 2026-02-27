@@ -1,5 +1,5 @@
 // app.js (no template strings)
-console.log("APP.JS LOADED");
+
 async function fetchJson(url) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("Could not load config (" + res.status + ") from " + url);
@@ -71,7 +71,8 @@ function renderConfig(config, src) {
   function toSvgY(y) { return height - (y - ymin) * yScale; }
 
   // SVG builder
-  let svg = '<svg viewBox="0 0 ' + width + " " + height + '" width="' + width + '" height="' + height + '" style="border:1px solid #ccc; background:white;">';
+  let svg =
+    '<svg viewBox="0 0 ' + width + " " + height + '" width="' + width + '" height="' + height + '" style="border:1px solid #ccc; background:white;">';
 
   // Grid lines
   for (let x = xmin; x <= xmax; x++) {
@@ -122,6 +123,12 @@ function renderConfig(config, src) {
     const p = points[i];
     svg += '<circle cx="' + toSvgX(p[0]) + '" cy="' + toSvgY(p[1]) + '" r="5" fill="#2563eb" />';
   }
+
+  // 🔵 Function label
+  // Position: near top-right, inside the grid.
+  const labelX = toSvgX(xmax - 2);
+  const labelY = toSvgY(ymax - 1);
+  svg += '<text x="' + labelX + '" y="' + labelY + '" style="font-family: Arial, sans-serif; font-size: 16px; fill: #2563eb; font-weight: 600; pointer-events: none;">y = f(x)</text>';
 
   svg += "</svg>";
   appEl.innerHTML = svg;
