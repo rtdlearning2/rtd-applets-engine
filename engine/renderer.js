@@ -35,6 +35,10 @@ export function render(state) {
       .join(" ");
   }
 
+  // Step 5.1 — shared point radius (match blue + red)
+  // Use whatever the original blue points used; in this file it was 5.
+  const POINT_R = 5;
+
   let svg = `
     <svg id="graphSvg"
          viewBox="0 0 ${width} ${height}"
@@ -63,32 +67,39 @@ export function render(state) {
   originalPoints.forEach(p => {
     svg += `<circle cx="${toSvgX(p[0])}"
                     cy="${toSvgY(p[1])}"
-                    r="5"
+                    r="${POINT_R}"
                     fill="#2563eb"/>`;
   });
 
   // ===============================
-  // Student rendering (updated)
+  // Student rendering (Step 5.x)
   // ===============================
 
-  // 1. Draw all raw student clicks (small, faint dots)
-  state.studentPoints.forEach(p => {
-    svg += `<circle cx="${toSvgX(p[0])}"
-                    cy="${toSvgY(p[1])}"
-                    r="3"
-                    fill="#dc2626"
-                    opacity="1" />`;
-  });
+  // Step 5.2 — Attempt line: connects raw clicks in the order clicked (faint)
+  if (state.studentPoints.length > 1) {
+    svg += `<path d="${buildPath(state.studentPoints)}"
+                 fill="none"
+                 stroke="#dc2626"
+                 stroke-width="3"
+                 opacity="0.25" />`;
+  }
 
-  // 2. Draw clean ordered polyline (if 2+ matched points)
+  // Step 5.3 — Clean line: connects matched vertices in expected order (solid)
   if (state.orderedStudentPoints.length > 1) {
     svg += `<path d="${buildPath(state.orderedStudentPoints)}"
                  fill="none"
                  stroke="#dc2626"
-                 stroke-width="3"/>`;
+                 stroke-width="3"
+                 opacity="1" />`;
   }
 
-  // 3. Draw matched ordered points on top (solid)
+  // Step 5.4 — Draw points (raw only) so we don’t leak correctness
+  state.studentPoints.forEach(p => {
+    svg += `<circle cx="${toSvgX(p[0])}"
+                    cy="${toSvgY(p[1])}"
+                    r="${POINT_R}"
+                    fill="#dc2626" />`;
+  });
 
   // ✅ Solution overlay — thicker and green
   if (state.showSolution && state.expectedPoints.length > 0) {
@@ -100,7 +111,7 @@ export function render(state) {
     state.expectedPoints.forEach(p => {
       svg += `<circle cx="${toSvgX(p[0])}"
                       cy="${toSvgY(p[1])}"
-                      r="6"
+                      r="${POINT_R}"
                       fill="#16a34a"/>`;
     });
   }
