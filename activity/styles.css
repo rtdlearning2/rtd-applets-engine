@@ -1,0 +1,10 @@
+:root { --bg:#f7f7fb; --card:#fff; --text:#111; --muted:#666; --line:#e6e6ee; }
+
+body { margin:0; font-family: system-ui, Segoe UI, Arial, sans-serif; background:var(--bg); color:var(--text); }
+.bar{ padding: 14px 18px; border-bottom: 1px solid var(--line); background:#fff; }
+h1{ margin:0; font-size:18px; }
+.subtitle{ font-size:13px; color:var(--muted); margin-top:4px; }
+.wrap{ padding:16px; }
+.card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
+.muted{ color:var(--muted); }
+pre{ background:#f1f1f6; padding:12px; border-radius:10px; overflow:auto; }
