@@ -1,4 +1,5 @@
 import { computeExpectedPoints } from "./transformEngine.js";
+import { orderStudentPoints } from "./validator.js";
 
 export function createAppState({ config, src }) {
   const originalPoints = config?.original?.points ?? [];

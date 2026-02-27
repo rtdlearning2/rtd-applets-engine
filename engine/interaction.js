@@ -11,7 +11,9 @@ export function attachGraphInteraction(state, onStateChange) {
 
     if (!svg.contains(e.target)) return;
 
-    if (state.studentPoints.length >= 5) return;
+    const maxPoints = state.expectedPoints.length;
+    const matchedCount = state.orderedStudentPoints?.length ?? 0;
+    if (matchedCount >= maxPoints) return;
 
     const rect = svg.getBoundingClientRect();
     const x = e.clientX - rect.left;

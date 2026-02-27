@@ -77,7 +77,7 @@ export function render(state) {
                     cy="${toSvgY(p[1])}"
                     r="3"
                     fill="#dc2626"
-                    opacity="0.35" />`;
+                    opacity="1" />`;
   });
 
   // 2. Draw clean ordered polyline (if 2+ matched points)
@@ -89,12 +89,6 @@ export function render(state) {
   }
 
   // 3. Draw matched ordered points on top (solid)
-  state.orderedStudentPoints.forEach(p => {
-    svg += `<circle cx="${toSvgX(p[0])}"
-                    cy="${toSvgY(p[1])}"
-                    r="5"
-                    fill="#dc2626" />`;
-  });
 
   // ✅ Solution overlay — thicker and green
   if (state.showSolution && state.expectedPoints.length > 0) {
