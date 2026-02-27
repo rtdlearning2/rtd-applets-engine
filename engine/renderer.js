@@ -1,5 +1,7 @@
 // engine/renderer.js
 
+import { validateSubmission } from "./validator.js";
+
 export function render(state) {
   const container = document.getElementById("app");
   if (!container) return;
@@ -26,8 +28,7 @@ export function render(state) {
   function buildPath(points) {
     return points
       .map((p, i) =>
-        (i === 0 ? "M" : "L") +
-        toSvgX(p[0]) + " " + toSvgY(p[1])
+        (i === 0 ? "M" : "L") + toSvgX(p[0]) + " " + toSvgY(p[1])
       )
       .join(" ");
   }
@@ -43,12 +44,16 @@ export function render(state) {
   // Grid
   for (let x = xmin; x <= xmax; x++) {
     const sx = toSvgX(x);
-    svg += `<line x1="${sx}" y1="0" x2="${sx}" y2="${height}" stroke="${x===0?'#000':'#eee'}"/>`;
+    svg += `<line x1="${sx}" y1="0" x2="${sx}" y2="${height}" stroke="${
+      x === 0 ? "#000" : "#eee"
+    }"/>`;
   }
 
   for (let y = ymin; y <= ymax; y++) {
     const sy = toSvgY(y);
-    svg += `<line x1="0" y1="${sy}" x2="${width}" y2="${sy}" stroke="${y===0?'#000':'#eee'}"/>`;
+    svg += `<line x1="0" y1="${sy}" x2="${width}" y2="${sy}" stroke="${
+      y === 0 ? "#000" : "#eee"
+    }"/>`;
   }
 
   // Original graph (blue)
@@ -88,6 +93,11 @@ export function render(state) {
       <div style="margin-bottom:10px;">
         <button id="undoBtn">Undo</button>
         <button id="resetBtn">Reset</button>
+        <button id="submitBtn">Submit</button>
+      </div>
+
+      <div id="feedback" style="margin:10px 0; font-weight:600;">
+        ${state.feedback ?? ""}
       </div>
 
       <p>Expected points: ${expectedPoints.length}</p>
@@ -97,14 +107,24 @@ export function render(state) {
     </div>
   `;
 
-  // ADD event listeners (inside render)
+  // Undo
   document.getElementById("undoBtn")?.addEventListener("click", () => {
     state.undo();
     render(state);
   });
 
+  // Reset
   document.getElementById("resetBtn")?.addEventListener("click", () => {
     state.reset();
+    render(state);
+  });
+
+  // Submit
+  document.getElementById("submitBtn")?.addEventListener("click", () => {
+    const result = validateSubmission(state);
+
+    state.feedback = result.message;
+
     render(state);
   });
 }
