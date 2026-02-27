@@ -139,5 +139,7 @@ async function main() {
   renderConfig(config, src);
 }
 
-main().catch(showError);
+window.addEventListener("DOMContentLoaded", () => {
+  main().catch(showError);
+});
 ```
