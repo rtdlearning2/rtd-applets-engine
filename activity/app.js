@@ -10,88 +10,91 @@ function getConfigUrl() {
 }
 
 function setHeader(title, subtitle) {
-  document.getElementById("title").textContent = title;
-  document.getElementById("subtitle").textContent = subtitle || "";
+  const titleEl = document.getElementById("title");
+  const subtitleEl = document.getElementById("subtitle");
+  if (titleEl) titleEl.textContent = title;
+  if (subtitleEl) subtitleEl.textContent = subtitle || "";
 }
 
 function showError(err) {
-  setHeader("Config load failed", err.message);
-  document.getElementById("app").innerHTML = `
+  setHeader("Config load failed", err?.message || String(err));
+  const appEl = document.getElementById("app");
+  if (!appEl) return;
+
+  appEl.innerHTML = `
     <div class="muted">Fix the URL or config path and reload.</div>
-    <pre>${escapeHtml(String(err.stack || err.message || err))}</pre>
+    <pre>${escapeHtml(String(err?.stack || err?.message || err))}</pre>
   `;
 }
 
 function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, (m) => ({
+  return String(str).replace(/[&<>"']/g, (m) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
   }[m]));
 }
 
 function renderConfig(config, src) {
-  setHeader(config.title || "Untitled activity", `Loaded from: ${src}`);
+  setHeader(config?.title || "Untitled activity", `Loaded from: ${src}`);
+
+  const appEl = document.getElementById("app");
+  if (!appEl) return;
+
+  // Basic validation with friendly message
+  if (!config?.grid || !config?.original?.points?.length) {
+    appEl.innerHTML = `
+      <div class="muted">Config is missing required fields.</div>
+      <pre>${escapeHtml(JSON.stringify(config, null, 2))}</pre>
+    `;
+    return;
+  }
 
   const { xmin, xmax, ymin, ymax } = config.grid;
 
-  const width = 600;
-  const height = 600;
+  const width = 640;
+  const height = 640;
 
   const xScale = width / (xmax - xmin);
   const yScale = height / (ymax - ymin);
 
-  function toSvgX(x) {
-    return (x - xmin) * xScale;
-  }
+  const toSvgX = (x) => (x - xmin) * xScale;
+  const toSvgY = (y) => height - (y - ymin) * yScale;
 
-  function toSvgY(y) {
-    return height - (y - ymin) * yScale;
-  }
+  // Grid lines
+  let svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="border:1px solid #ccc; background:white;">`;
 
-  let svg = `
-    <svg width="${width}" height="${height}" style="border:1px solid #ccc; background:white;">
-  `;
-
-  // Draw grid lines
   for (let x = xmin; x <= xmax; x++) {
     const sx = toSvgX(x);
-    svg += `<line x1="${sx}" y1="0" x2="${sx}" y2="${height}" stroke="#eee"/>`;
+    const stroke = (x === 0) ? "#000" : "#eee";
+    const strokeWidth = (x === 0) ? 1.5 : 1;
+    svg += `<line x1="${sx}" y1="0" x2="${sx}" y2="${height}" stroke="${stroke}" stroke-width="${strokeWidth}"/>`;
   }
 
   for (let y = ymin; y <= ymax; y++) {
     const sy = toSvgY(y);
-    svg += `<line x1="0" y1="${sy}" x2="${width}" y2="${sy}" stroke="#eee"/>`;
+    const stroke = (y === 0) ? "#000" : "#eee";
+    const strokeWidth = (y === 0) ? 1.5 : 1;
+    svg += `<line x1="0" y1="${sy}" x2="${width}" y2="${sy}" stroke="${stroke}" stroke-width="${strokeWidth}"/>`;
   }
 
-  // Draw axes
-  svg += `<line x1="0" y1="${toSvgY(0)}" x2="${width}" y2="${toSvgY(0)}" stroke="black"/>`;
-  svg += `<line x1="${toSvgX(0)}" y1="0" x2="${toSvgX(0)}" y2="${height}" stroke="black"/>`;
-
-  // Draw original polyline
+  // Original polyline
   const points = config.original.points;
 
-  let pathData = points.map((p, i) => {
-    const x = toSvgX(p[0]);
-    const y = toSvgY(p[1]);
-    return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-  }).join(" ");
+  const pathData = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${toSvgX(p[0])} ${toSvgY(p[1])}`)
+    .join(" ");
 
-  svg += `<path d="${pathData}" fill="none" stroke="blue" stroke-width="2"/>`;
+  if (config.original.connectLines !== false) {
+    svg += `<path d="${pathData}" fill="none" stroke="#2563eb" stroke-width="2.5" />`;
+  }
 
-  // Draw points
-  points.forEach(p => {
-    svg += `
-      <circle 
-        cx="${toSvgX(p[0])}" 
-        cy="${toSvgY(p[1])}" 
-        r="5" 
-        fill="blue"
-      />
-    `;
-  });
+  // Points
+  for (const p of points) {
+    svg += `<circle cx="${toSvgX(p[0])}" cy="${toSvgY(p[1])}" r="5" fill="#2563eb" />`;
+  }
 
   svg += `</svg>`;
 
-  document.getElementById("app").innerHTML = svg;
+  appEl.innerHTML = svg;
 }
 
 async function main() {
@@ -99,10 +102,13 @@ async function main() {
 
   if (!src) {
     setHeader("No config specified", "Add ?src=... to the URL");
-    document.getElementById("app").innerHTML = `
-      <p class="muted">Example (local):</p>
-      <pre>http://localhost:3000/activity/?src=../configs/reflections/reflect_x_001.json</pre>
-    `;
+    const appEl = document.getElementById("app");
+    if (appEl) {
+      appEl.innerHTML = `
+        <p class="muted">Example:</p>
+        <pre>https://rtdlearning2.github.io/rtd-applets-engine/activity/?src=https://raw.githubusercontent.com/rtdlearning2/rtd-applets-math30-1/main/configs/unit-1-transformations/reflections/reflect_x_001.json</pre>
+      `;
+    }
     return;
   }
 
