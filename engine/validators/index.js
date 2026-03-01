@@ -1,4 +1,8 @@
 import { validate as validateTransformations } from "./transformations.js";
+import { validate as validateFunctionPlot } from "./functionPlot.js";
+import { validate as validateIntersection } from "./intersection.js";
+import { validate as validateExtrema } from "./extrema.js";
+import { validate as validateRationalPlot } from "./rationalPlot.js";
 
 const registry = {};
 
@@ -28,3 +32,7 @@ export function validate(activityType, state, config) {
 }
 
 registerValidator("transformations", validateTransformations);
+registerValidator("functionPlot", validateFunctionPlot);
+registerValidator("intersection", validateIntersection);
+registerValidator("extrema", validateExtrema);
+registerValidator("rationalPlot", validateRationalPlot);

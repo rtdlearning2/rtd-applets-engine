@@ -1,0 +1,11 @@
+{
+  "name": "applets-math30-1-example",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "applets-engine": "file:../../"
+  },
+  "scripts": {
+    "dev": "vite"
+  }
+}

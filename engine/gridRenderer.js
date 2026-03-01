@@ -15,7 +15,7 @@ export function renderGrid(svg, view, dims, options = {}) {
 
   for (let x = Math.ceil(xmin); x <= Math.floor(xmax); x++) {
     const sx = toSvgX(x);
-    content += `<line x1="${sx}" y1="0" x2="${sx}" y2="${height}" stroke="${x === 0 ? "#000" : "#eee"}"/>`;
+    content += `<line x1="${sx}" y1="0" x2="${sx}" y2="${height}" stroke="${x === 0 ? "#000" : "#f2f2f2"}"/>`;
     if (x !== 0) {
       content += `<text x="${sx}" y="${axisY + 15}" font-size="12" font-family="sans-serif" text-anchor="middle" fill="#666">${x}</text>`;
     }
@@ -23,7 +23,7 @@ export function renderGrid(svg, view, dims, options = {}) {
 
   for (let y = Math.ceil(ymin); y <= Math.floor(ymax); y++) {
     const sy = toSvgY(y);
-    content += `<line x1="0" y1="${sy}" x2="${width}" y2="${sy}" stroke="${y === 0 ? "#000" : "#eee"}"/>`;
+    content += `<line x1="0" y1="${sy}" x2="${width}" y2="${sy}" stroke="${y === 0 ? "#000" : "#f2f2f2"}"/>`;
     if (y !== 0) {
       content += `<text x="${axisX - 5}" y="${sy + 4}" font-size="12" font-family="sans-serif" text-anchor="end" fill="#666">${y}</text>`;
     }

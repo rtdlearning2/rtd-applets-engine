@@ -31,6 +31,7 @@ function migrateSchemaOne(rawConfig) {
   const interaction = normalizeInteraction(rawConfig);
   const series = normalizeSeries(rawConfig);
   const activity = normalizeActivity(rawConfig);
+  const pages = normalizePages(rawConfig, ui);
   const activityType = activity.type ?? rawConfig.activityType ?? "transformations";
   const original = normalizeOriginal(rawConfig, series);
   const transform = rawConfig.transform ?? activity.transform;
@@ -50,7 +51,8 @@ function migrateSchemaOne(rawConfig) {
     legend: ui.legend,
     original,
     transform,
-    activityType
+    activityType,
+    ...(pages ? { pages } : {})
   };
 }
 
@@ -81,6 +83,40 @@ function normalizeInteraction(rawConfig) {
     snapStep: toNumber(source.snapStep, DEFAULT_INTERACTION.snapStep),
     hitRadiusPx: toNumber(source.hitRadiusPx, DEFAULT_INTERACTION.hitRadiusPx)
   };
+}
+
+function normalizePages(rawConfig, ui) {
+  if (Array.isArray(rawConfig.pages)) {
+    return rawConfig.pages;
+  }
+
+  if (!shouldUsePages(rawConfig)) {
+    return null;
+  }
+
+  const prompt = ui?.instructions ?? rawConfig.instructions ?? "";
+  const title = ui?.title ?? rawConfig.title ?? "Graph Task";
+
+  return [
+    {
+      id: "p1",
+      type: "graph-plot",
+      title,
+      prompt
+    }
+  ];
+}
+
+function shouldUsePages(rawConfig) {
+  const directFlag = rawConfig.usePages ?? rawConfig.pageMode;
+  const uiFlag = rawConfig.ui?.usePages ?? rawConfig.ui?.pageMode;
+  const flag = directFlag ?? uiFlag;
+
+  if (flag === true) return true;
+  if (typeof flag === "string") {
+    return flag === "template" || flag === "pages";
+  }
+  return false;
 }
 
 function normalizeSeries(rawConfig) {

@@ -4,13 +4,14 @@ import { orderStudentPoints } from "./validator.js";
 
 const handlers = {
   placePoints: (state, e, svg, onStateChange) => {
+    if (state.currentStep !== 1) return;
     const maxPoints = state.expectedPoints.length;
-    const matchedCount = state.orderedStudentPoints?.length ?? 0;
-    if (matchedCount >= maxPoints) return;
+    // Limit by raw student clicks (allow up to expectedPoints.length clicks)
+    if (state.studentPoints.length >= maxPoints) return;
 
     const rect = svg.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    let x = e.clientX - rect.left;
+    let y = e.clientY - rect.top;
 
     // Convert back to graph coords
     const xmin = state.view.xmin;
@@ -19,27 +20,55 @@ const handlers = {
     const ymax = state.view.ymax;
 
     // Use rect dimensions for accurate pixel mapping (handles scaling)
-    const width = rect.width;
-    const height = rect.height;
+    let width = rect.width;
+    let height = rect.height;
+
+    // Prefer SVG coordinate mapping when available (handles transforms reliably)
+    if (svg.createSVGPoint && svg.getScreenCTM) {
+      const ctm = svg.getScreenCTM();
+      if (ctm) {
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgPoint = pt.matrixTransform(ctm.inverse());
+        x = svgPoint.x;
+        y = svgPoint.y;
+        const viewBox = svg.viewBox?.baseVal;
+        if (viewBox && viewBox.width && viewBox.height) {
+          width = viewBox.width;
+          height = viewBox.height;
+        }
+      }
+    }
 
     const graphX = xmin + (x / width) * (xmax - xmin);
     const graphY = ymax - (y / height) * (ymax - ymin);
 
-    // Snap to nearest integer
+    // Snap to configured snap step (default 1)
+    const step = state.config.interaction?.snapStep ?? 1;
     const snapped = [
-      Math.round(graphX),
-      Math.round(graphY)
+      Math.round(graphX / step) * step,
+      Math.round(graphY / step) * step
     ];
 
-    // Hit radius check
-    const hitRadius = state.config.interaction.hitRadiusPx;
-    
-    // Project snapped point back to screen pixels to verify distance
-    const screenX = ((snapped[0] - xmin) / (xmax - xmin)) * width;
-    const screenY = ((ymax - snapped[1]) / (ymax - ymin)) * height;
+    // Optional pixel tolerance: only accept the snap if the click is reasonably
+    // close (in pixels) to the snapped vertex. This prevents wildly off-grid
+    // accidental clicks while preserving exact snap behavior. Configurable
+    // via state.config.interaction.hitRadiusPx (default 18px).
+    const hitRadiusPx = state.config.interaction?.hitRadiusPx ?? 18;
 
-    const dist = Math.hypot(x - screenX, y - screenY);
-    if (dist > hitRadius) return;
+    // Convert the snapped graph coords back to pixel space for distance check
+    const snappedPixelX = ((snapped[0] - xmin) / (xmax - xmin)) * width;
+    const snappedPixelY = ((ymax - snapped[1]) / (ymax - ymin)) * height;
+
+    const dx = snappedPixelX - x;
+    const dy = snappedPixelY - y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > hitRadiusPx) {
+      // Click was too far from the grid vertex — ignore it.
+      return;
+    }
 
     // Prevent duplicate clicks on the same vertex
     const alreadyClicked = state.studentPoints.some(
@@ -56,6 +85,7 @@ const handlers = {
       state.studentPoints
     );
 
+    
     onStateChange();
   },
   drawPolyline: () => {},
@@ -73,8 +103,14 @@ export function attachGraphInteraction(state, onStateChange) {
     if (!svg.contains(e.target)) return;
 
     const mode = state.config.interaction?.mode || "placePoints";
-    if (handlers[mode]) {
-      handlers[mode](state, e, svg, onStateChange);
+
+    // Combine built-in handlers with any activity-provided handlers. Activity handlers
+    // override built-ins when keys conflict.
+    const activityHandlers = state.activityHandlers ?? {};
+    const combined = { ...handlers, ...activityHandlers };
+
+    if (combined[mode]) {
+      combined[mode](state, e, svg, onStateChange);
     }
   });
 

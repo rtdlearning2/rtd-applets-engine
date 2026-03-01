@@ -4,7 +4,10 @@
   "description": "For hosing interactive applets we'll make for iSpring courses",
   "main": "index.js",
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "build": "vite build && node scripts/copy-config.mjs",
+    "preview": "vite preview",
+    "test": "node tests/page-templates.smoke.mjs"
   },
   "repository": {
     "type": "git",
@@ -19,5 +22,8 @@
   "homepage": "https://github.com/rtdlearning2/applets-engine#readme",
   "devDependencies": {
     "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "puppeteer": "^24.37.5"
   }
 }
