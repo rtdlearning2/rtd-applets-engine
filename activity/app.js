@@ -1,8 +1,8 @@
-import { loadConfigFromSrc } from "../engine/configLoader.js";
-import { createAppState } from "../engine/state.js";
-import { render } from "../engine/renderer.js";
-import { renderPageApp } from "../engine/pageRenderer.js";
-import { attachGraphInteraction } from "../engine/interaction.js";
+import { loadConfigFromSrc } from "../engine/core/configLoader.js";
+import { createAppState } from "../engine/core/state.js";
+import { render } from "../engine/renderers/renderer.js";
+import { renderPageApp } from "../engine/renderers/pageRenderer.js";
+import { attachGraphInteraction } from "../engine/core/interaction.js";
 
 async function main() {
   try {
@@ -33,14 +33,18 @@ async function main() {
     const forceLegacy = params.get("legacy") === "1" || urlMode === "legacy";
     const configMode = config?.ui?.mode ?? config?.mode;
     const publishMode = config?.ui?.publishMode === true;
-    const isSlideMode = urlMode === "slide" || config?.slideMode === true || configMode === "slide";
+    const isSlideMode =
+      urlMode === "slide" ||
+      config?.slideMode === true ||
+      configMode === "slide";
     let isInIframe = false;
     try {
       isInIframe = window.self !== window.top;
     } catch (err) {
       isInIframe = true;
     }
-    const isEmbedMode = !embedOff && (publishMode || embedOn || isSlideMode || isInIframe);
+    const isEmbedMode =
+      !embedOff && (publishMode || embedOn || isSlideMode || isInIframe);
 
     if (isSlideMode) {
       document.documentElement.classList.add("slide-mode");
@@ -67,7 +71,7 @@ async function main() {
         safePadding: "24px",
         contentWidth: "1200px",
         contentPadding: "24px",
-        graphSize: "520px"
+        graphSize: "520px",
       },
       ppt720p: {
         slideWidth: "960px",
@@ -75,7 +79,7 @@ async function main() {
         safePadding: "18px",
         contentWidth: "900px",
         contentPadding: "18px",
-        graphSize: "480px"
+        graphSize: "480px",
       },
       ppt4x3: {
         slideWidth: "1024px",
@@ -83,8 +87,8 @@ async function main() {
         safePadding: "20px",
         contentWidth: "960px",
         contentPadding: "20px",
-        graphSize: "520px"
-      }
+        graphSize: "520px",
+      },
     };
 
     const presetKey = layout.preset;
@@ -100,13 +104,38 @@ async function main() {
     }
 
     if (appRoot && resolvedLayout) {
-      if (resolvedLayout.slideWidth) appRoot.style.setProperty("--slide-width", String(resolvedLayout.slideWidth));
-      if (resolvedLayout.slideHeight) appRoot.style.setProperty("--slide-height", String(resolvedLayout.slideHeight));
-      if (resolvedLayout.safePadding) appRoot.style.setProperty("--safe-padding", String(resolvedLayout.safePadding));
-      if (resolvedLayout.contentWidth) appRoot.style.setProperty("--content-width", String(resolvedLayout.contentWidth));
-      if (resolvedLayout.contentPadding) appRoot.style.setProperty("--content-padding", String(resolvedLayout.contentPadding));
-      if (resolvedLayout.graphSize) appRoot.style.setProperty("--graph-size", String(resolvedLayout.graphSize));
-      if (resolvedLayout.overflowPolicy) appRoot.dataset.overflowPolicy = String(resolvedLayout.overflowPolicy);
+      if (resolvedLayout.slideWidth)
+        appRoot.style.setProperty(
+          "--slide-width",
+          String(resolvedLayout.slideWidth),
+        );
+      if (resolvedLayout.slideHeight)
+        appRoot.style.setProperty(
+          "--slide-height",
+          String(resolvedLayout.slideHeight),
+        );
+      if (resolvedLayout.safePadding)
+        appRoot.style.setProperty(
+          "--safe-padding",
+          String(resolvedLayout.safePadding),
+        );
+      if (resolvedLayout.contentWidth)
+        appRoot.style.setProperty(
+          "--content-width",
+          String(resolvedLayout.contentWidth),
+        );
+      if (resolvedLayout.contentPadding)
+        appRoot.style.setProperty(
+          "--content-padding",
+          String(resolvedLayout.contentPadding),
+        );
+      if (resolvedLayout.graphSize)
+        appRoot.style.setProperty(
+          "--graph-size",
+          String(resolvedLayout.graphSize),
+        );
+      if (resolvedLayout.overflowPolicy)
+        appRoot.dataset.overflowPolicy = String(resolvedLayout.overflowPolicy);
     }
 
     const state = createAppState({ config, src });
@@ -120,10 +149,10 @@ async function main() {
     const applyOverflowCollapse = (safeArea, shouldCollapse) => {
       if (!safeArea) return;
       const targets = safeArea.querySelectorAll(
-        ".page-body, .activity-copy > section, .explanation-box"
+        ".page-body, .activity-copy > section, .explanation-box",
       );
 
-      targets.forEach(section => {
+      targets.forEach((section) => {
         section.classList.add("collapsible-section");
         if (shouldCollapse) {
           section.classList.add("collapsed");
@@ -162,17 +191,29 @@ async function main() {
       if (!inner) return;
 
       const computed = getComputedStyle(root);
-      const slideWidth = parseSize(computed.getPropertyValue("--slide-width"), 1280);
-      const slideHeight = parseSize(computed.getPropertyValue("--slide-height"), 720);
+      const slideWidth = parseSize(
+        computed.getPropertyValue("--slide-width"),
+        1280,
+      );
+      const slideHeight = parseSize(
+        computed.getPropertyValue("--slide-height"),
+        720,
+      );
       const containerWidth = root.clientWidth || window.innerWidth;
       const containerHeight = root.clientHeight || window.innerHeight;
-      const scale = Math.min(containerWidth / slideWidth, containerHeight / slideHeight, 1);
+      const scale = Math.min(
+        containerWidth / slideWidth,
+        containerHeight / slideHeight,
+        1,
+      );
 
       inner.style.setProperty("--slide-scale", String(scale));
 
       const safeArea = root.querySelector(".slide-safe-area");
       if (safeArea) {
-        const overflow = safeArea.scrollHeight > safeArea.clientHeight || safeArea.scrollWidth > safeArea.clientWidth;
+        const overflow =
+          safeArea.scrollHeight > safeArea.clientHeight ||
+          safeArea.scrollWidth > safeArea.clientWidth;
         safeArea.classList.toggle("overflow-warning", overflow);
         const policy = root.dataset.overflowPolicy;
         safeArea.classList.toggle("overflow-clamp", policy === "clamp");
@@ -180,8 +221,8 @@ async function main() {
       }
     };
 
-
-    const hasPages = Array.isArray(config?.pages) && config.pages.length > 0 && !forceLegacy;
+    const hasPages =
+      Array.isArray(config?.pages) && config.pages.length > 0 && !forceLegacy;
 
     // Render once initially
     if (hasPages) {

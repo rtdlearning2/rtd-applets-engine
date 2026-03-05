@@ -20,7 +20,7 @@ npm run dev
 
 2. Open the transform example (the golden config) in your browser:
 
-http://localhost:5173/activity/index.html?src=/engine/config/golden.json
+http://localhost:5173/activity/index.html?src=/applets/configs/golden.json
 
 You should see the activity load as before. The engine will try to import the registration file and use the content-provided `transformations` activity if present.
 

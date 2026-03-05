@@ -19,7 +19,7 @@ npm run dev
 
 Then open a local activity page that references a config JSON provided by the engine (or copy configs here):
 
-http://localhost:5173/activity/index.html?src=/engine/config/golden.json
+http://localhost:5173/activity/index.html?src=/applets/configs/golden.json
 
 2) npm link (alternate)
 

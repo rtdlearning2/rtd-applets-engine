@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "title": "Roots of a Quadratic",
+  "ui": {
+    "layout": {
+      "preset": "ppt1080p",
+      "overflowPolicy": "scroll"
+    }
+  },
+  "grid": {
+    "xmin": -5,
+    "xmax": 8,
+    "ymin": -4,
+    "ymax": 4
+  },
+  "interaction": {
+    "mode": "placePoints",
+    "snapStep": 0.5,
+    "hitRadiusPx": 20
+  },
+  "original": {
+    "points": [],
+    "connectLines": false
+  },
+  "activity": {
+    "type": "quadraticRoots",
+    "activityModule": "../activities/quadraticRoots.js",
+    "config": {
+      "a": 1,
+      "b": -5,
+      "c": 6,
+      "tolerance": 0.4
+    }
+  },
+  "pages": [
+    {
+      "id": "p1",
+      "type": "numeric-input",
+      "title": "Smaller Root",
+      "prompt": "What is the smaller root of x² − 5x + 6 = 0?",
+      "correctValue": 2,
+      "tolerance": 0
+    },
+    {
+      "id": "p2",
+      "type": "multiple-choice",
+      "title": "Step 2 — Count the Roots",
+      "prompt": "How many real roots does x² − 5x + 6 = 0 have?",
+      "choices": [
+        "0 — no real roots",
+        "1 — one repeated root",
+        "2 — two distinct roots"
+      ],
+      "multiSelect": false,
+      "correctIndex": 2
+    },
+    {
+      "id": "p3",
+      "type": "numeric-input",
+      "title": "Step 3 — Identify a Root",
+      "prompt": "What is the smaller root of x² − 5x + 6 = 0?",
+      "unit": "",
+      "correctValue": 2,
+      "tolerance": 0
+    },
+    {
+      "id": "p4",
+      "type": "drag-drop-fill",
+      "title": "Step 4 — Factor the Quadratic",
+      "prompt": "Complete the factored form: x² − 5x + 6 = (x − ▢)(x − ▢)",
+      "tokens": [
+        "2",
+        "3",
+        "5",
+        "6",
+        "-2",
+        "-3"
+      ],
+      "blanks": [
+        "factor1",
+        "factor2"
+      ],
+      "correctAnswers": {
+        "factor1": "2",
+        "factor2": "3"
+      }
+    },
+    {
+      "id": "p5",
+      "type": "true-false-grid",
+      "title": "Step 5 — Quick Check",
+      "prompt": "Mark each statement true or false.",
+      "statements": [
+        "The roots of x² − 5x + 6 = 0 are x = 2 and x = 3.",
+        "The discriminant b² − 4ac is negative for this equation.",
+        "The parabola crosses the x-axis at two points."
+      ],
+      "correctAnswers": [
+        true,
+        false,
+        true
+      ]
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 // path /examples/applets-math30-1/register-transformations.mjs so the engine
 // can import it dynamically before creating app state.
 
-import { registerActivity } from '/engine/activities/index.js';
+import { registerActivity } from '/engine/core/activityRegistry.js';
 import * as transformations from './activities/transformations.js';
 
 registerActivity(transformations);

@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 
 (async () => {
-  const url = 'http://localhost:5176/activity/index.html?src=/engine/config/golden.json';
+  const url = 'http://localhost:5176/activity/index.html?src=/applets/configs/golden.json';
   console.log('Opening', url);
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();

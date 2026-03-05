@@ -7,7 +7,7 @@ Options to host the applet
 1) GitHub Pages (quick, public)
 - Push your `applets-engine` (or a built site) to a GitHub repo and enable Pages for the `gh-pages` branch or `/docs` folder.
 - Example URL after publish:
-  `https://<your-org>.github.io/applets-engine/activity/index.html?src=/engine/config/golden.json`
+  `https://<your-org>.github.io/applets-engine/activity/index.html?src=/applets/configs/golden.json`
 
 2) Host on an internal web server
 - Place the repo's `activity` and `engine` files on any static server (IIS, nginx, S3 static site, etc.).
@@ -24,10 +24,10 @@ Embedding in PowerPoint / iSpring
 Best practices
 - Use a fully-qualified URL (https) when embedding in production.
 - Keep activity JSON (the `?src=` target) in a stable location in your content repo so teachers can edit question content without touching engine code.
-- If using GitHub Pages, prefer adding built/minified copies of the engine under a `docs/` folder and point `?src=` at `/docs/engine/config/golden.json`.
+- If using GitHub Pages, prefer adding built/minified copies of the engine under a `docs/` folder and point `?src=` at `/docs/applets/configs/golden.json`.
 
 Offline packaging for LMS / iSpring
-- If you must create a self-contained package, you can export a small site bundle (copy `activity/*.html`, `engine/*.js`, `engine/config/*.json`, and `activity/styles.css`) to a folder and host that folder inside your LMS or local webserver. iSpring's Web Object can point to an internal LMS URL.
+- If you must create a self-contained package, you can export a small site bundle (copy `activity/*.html`, `engine/*.js`, `applets/configs/*.json`, and `activity/styles.css`) to a folder and host that folder inside your LMS or local webserver. iSpring's Web Object can point to an internal LMS URL.
 
 Notes about cross-origin and embedding
 - Ensure your hosting allows embedding (no `X-Frame-Options: DENY`). GitHub Pages and S3 typically allow embedding.

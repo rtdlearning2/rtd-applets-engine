@@ -2,7 +2,7 @@
 // A copy of the transformations activity placed in the content repo to demonstrate
 // how content can own activity modules and register them with the engine.
 
-import { computeExpectedPoints } from "../../../engine/transformEngine.js";
+import { computeExpectedPoints } from "../../../engine/utils/transformEngine.js";
 
 export const activityType = "transformations";
 
