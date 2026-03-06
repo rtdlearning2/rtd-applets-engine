@@ -1,25 +1,43 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getAllPageRenderers } from "../engine/pages/index.js";
+import { PAGE_TYPES } from "../engine/pages/pageTypes.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const configsDir = path.join(__dirname, "..", "applets", "configs");
+const knownTypes = new Set(Object.values(PAGE_TYPES));
 
-const configPath = path.join(__dirname, "..", "engine", "config", "page-templates.json");
-const raw = fs.readFileSync(configPath, "utf8");
-const config = JSON.parse(raw);
+let passed = 0;
+let failed = 0;
 
-const pages = Array.isArray(config.pages) ? config.pages : [];
-const types = new Set(pages.map(page => page.type));
-const renderers = getAllPageRenderers();
-const rendererTypes = new Set(renderers.map(renderer => renderer.type));
-
-const missing = [...types].filter(type => !rendererTypes.has(type));
-
-if (missing.length > 0) {
-  console.error("Missing page renderers for:", missing.join(", "));
-  process.exit(1);
+function check(label, condition, detail = "") {
+  if (condition) {
+    console.log(`  ✓ ${label}`);
+    passed++;
+  } else {
+    console.error(`  ✗ ${label}${detail ? ": " + detail : ""}`);
+    failed++;
+  }
 }
 
-console.log("Page template smoke test passed. Types:", [...types].join(", "));
+const configFiles = fs.readdirSync(configsDir).filter(f => f.endsWith(".json"));
+
+for (const file of configFiles) {
+  const raw = fs.readFileSync(path.join(configsDir, file), "utf8");
+  const config = JSON.parse(raw);
+  const pages = Array.isArray(config.pages) ? config.pages : [];
+  if (pages.length === 0) continue;
+
+  console.log(`\n${file} (${pages.length} pages)`);
+
+  for (const page of pages) {
+    check(
+      `page "${page.id ?? "?"}" type "${page.type}" is a known page type`,
+      knownTypes.has(page.type),
+      `"${page.type}" not found in PAGE_TYPES`
+    );
+  }
+}
+
+console.log(`\n${passed} passed, ${failed} failed`);
+if (failed > 0) process.exit(1);

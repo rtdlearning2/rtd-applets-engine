@@ -1,0 +1,15 @@
+{
+  "title": "Rational: y = 1 / (x - 1)",
+  "schemaVersion": "1",
+  "grid": { "xmin": -5, "xmax": 5, "ymin": -10, "ymax": 10 },
+  "activity": {
+    "type": "rationalPlot",
+    "activityModule": "../activities/rationalPlot.js",
+    "config": {
+      "function": "1/(x - 1)",
+      "domain": [-5, 5],
+      "sampleStep": 0.25,
+      "tolerance": 0.5
+    }
+  }
+}

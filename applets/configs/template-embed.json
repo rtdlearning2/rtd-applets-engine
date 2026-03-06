@@ -1,0 +1,46 @@
+{
+  "title": "New Applet Title",
+  "ui": {
+    "layout": {
+      "preset": "ppt1080p",
+      "overflowPolicy": "scroll",
+      "safePadding": "4px",
+      "contentPadding": "4px"
+    }
+  },
+  "grid": { "xmin": -6, "xmax": 6, "ymin": -6, "ymax": 6 },
+  "interaction": {
+    "mode": "placePoints",
+    "snapStep": 1,
+    "hitRadiusPx": 20
+  },
+  "original": {
+    "points": [],
+    "connectLines": true
+  },
+  "transform": { "type": "reflect_x" },
+  "activity": {
+    "type": "transformations",
+    "activityModule": "../activities/transformations.js",
+    "config": {
+      "tolerance": 0,
+      "requireExactCount": true
+    }
+  },
+  "pages": [
+    {
+      "id": "p1",
+      "type": "graph-plot",
+      "title": "Exploration",
+      "showPrompt": false,
+      "showTitle": false,
+      "showProgress": false,
+      "showFooter": false
+    }
+  ],
+  "studentTask": {
+    "order": "left_to_right",
+    "snap": true,
+    "requireRule": true
+  }
+}

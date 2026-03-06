@@ -1,112 +1,88 @@
-const puppeteer = require('puppeteer');
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { orderStudentPoints } from "../engine/utils/validator.js";
+import { computeExpectedPoints } from "../engine/utils/transformEngine.js";
 
-(async () => {
-  const url = 'http://localhost:5176/activity/index.html?src=/engine/config/golden.json';
-  console.log('Opening', url);
-  const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-  const page = await browser.newPage();
-  page.setDefaultTimeout(10000);
+// --- orderStudentPoints ---
 
-  await page.goto(url, { waitUntil: 'networkidle2' });
+test("orderStudentPoints: exact matches returned in expected order", () => {
+  const expected = [[1, 2], [3, 4], [5, 6]];
+  const student = [[5, 6], [1, 2], [3, 4]];
+  const result = orderStudentPoints(expected, student);
+  assert.deepEqual(result, [[1, 2], [3, 4], [5, 6]]);
+});
 
-  // Wait for the SVG graph to be present
-  await page.waitForSelector('#graphSvg');
+test("orderStudentPoints: missing student points are omitted", () => {
+  const expected = [[1, 2], [3, 4], [5, 6]];
+  const student = [[1, 2], [5, 6]];
+  const result = orderStudentPoints(expected, student);
+  assert.deepEqual(result, [[1, 2], [5, 6]]);
+});
 
-  // Helper: click at a graph coordinate (graphX, graphY) by computing pixel coordinates
-  async function clickGraph(graphX, graphY, offset = {x:0,y:0}) {
-    await page.evaluate((gx, gy, off) => {
-      const svg = document.getElementById('graphSvg');
-      const rect = svg.getBoundingClientRect();
+test("orderStudentPoints: empty student returns empty", () => {
+  const result = orderStudentPoints([[1, 2], [3, 4]], []);
+  assert.deepEqual(result, []);
+});
 
-      // Read view bounds from global state if available
-      // The app attaches state to window._appState for debugging in some setups; fallback to attributes on svg
-      const state = window.state ?? window._appState ?? null;
-      let xmin = -6, xmax = 6, ymin = -6, ymax = 6;
-      if (state && state.view) {
-        xmin = state.view.xmin; xmax = state.view.xmax; ymin = state.view.ymin; ymax = state.view.ymax;
-      } else if (svg.dataset && svg.dataset.xmin) {
-        xmin = +svg.dataset.xmin; xmax = +svg.dataset.xmax; ymin = +svg.dataset.ymin; ymax = +svg.dataset.ymax;
-      }
+test("orderStudentPoints: tolerance allows near matches", () => {
+  const expected = [[2, 3]];
+  const student = [[2.3, 3.3]];
+  const result = orderStudentPoints(expected, student, 0.5);
+  assert.deepEqual(result, [[2.3, 3.3]]);
+});
 
-      const width = rect.width; const height = rect.height;
+test("orderStudentPoints: point outside tolerance is excluded", () => {
+  const expected = [[2, 3]];
+  const student = [[2.6, 3.6]];
+  const result = orderStudentPoints(expected, student, 0.5);
+  assert.deepEqual(result, []);
+});
 
-      const px = rect.left + ((gx - xmin) / (xmax - xmin)) * width + off.x;
-      const py = rect.top + ((ymax - gy) / (ymax - ymin)) * height + off.y;
+// --- computeExpectedPoints ---
 
-      // synthesize a pointer event at client coords (px, py)
-      const evt = new PointerEvent('pointerdown', {
-        clientX: px,
-        clientY: py,
-        bubbles: true,
-        cancelable: true,
-        pointerType: 'mouse'
-      });
+test("computeExpectedPoints: reflect_x negates y", () => {
+  const pts = [[1, 2], [-3, 4]];
+  const result = computeExpectedPoints(pts, { type: "reflect_x" });
+  assert.deepEqual(result, [[1, -2], [-3, -4]]);
+});
 
-      // Dispatch on the top-level document so our attachGraphInteraction listener sees it
-      document.dispatchEvent(evt);
-    }, graphX, graphY, offset);
+test("computeExpectedPoints: reflect_y negates x", () => {
+  const pts = [[1, 2], [-3, 4]];
+  const result = computeExpectedPoints(pts, { type: "reflect_y" });
+  assert.deepEqual(result, [[-1, 2], [3, 4]]);
+});
 
-    // Give the app a moment to update the DOM
-    await page.waitForTimeout(150);
-  }
+test("computeExpectedPoints: translate shifts by dx/dy", () => {
+  const pts = [[0, 0], [1, 1]];
+  const result = computeExpectedPoints(pts, { type: "translate", dx: 3, dy: -2 });
+  assert.deepEqual(result, [[3, -2], [4, -1]]);
+});
 
-  // Utility to count student points in SVG
-  async function countStudentPoints() {
-    return page.evaluate(() => {
-      const svg = document.getElementById('graphSvg');
-      if (!svg) return 0;
-      return svg.querySelectorAll('.student-point').length;
-    });
-  }
+test("computeExpectedPoints: rotate 90 around origin", () => {
+  const pts = [[1, 0], [0, 1]];
+  const result = computeExpectedPoints(pts, { type: "rotate", angle: 90 });
+  assert.deepEqual(result, [[0, 1], [-1, 0]]);
+});
 
-  // Start: ensure zero student points
-  let initial = await countStudentPoints();
-  console.log('Initial student points:', initial);
+test("computeExpectedPoints: rotate 180 around origin", () => {
+  const pts = [[2, 3]];
+  const result = computeExpectedPoints(pts, { type: "rotate", angle: 180 });
+  assert.deepEqual(result, [[-2, -3]]);
+});
 
-  // 1) Click exactly on the first expected vertex (-5,-3) (from golden.json)
-  await clickGraph(-5, -3);
-  let after1 = await countStudentPoints();
-  console.log('After clicking -5,-3 =>', after1);
-  if (after1 !== initial + 1) {
-    console.error('Expected +1 student point after exact click');
-    await browser.close();
-    process.exit(2);
-  }
+test("computeExpectedPoints: dilate scale by 2 from origin", () => {
+  const pts = [[1, 2], [-1, 3]];
+  const result = computeExpectedPoints(pts, { type: "dilate", k: 2 });
+  assert.deepEqual(result, [[2, 4], [-2, 6]]);
+});
 
-  // 2) Click slightly offset but within hitRadius (5px offset)
-  await clickGraph(-1, -1, {x:5, y:3});
-  let after2 = await countStudentPoints();
-  console.log('After clicking near -1,-1 =>', after2);
-  if (after2 !== after1 + 1) {
-    console.error('Expected +1 student point after near click');
-    await browser.close();
-    process.exit(3);
-  }
+test("computeExpectedPoints: no transform returns original", () => {
+  const pts = [[1, 2], [3, 4]];
+  const result = computeExpectedPoints(pts, null);
+  assert.deepEqual(result, pts);
+});
 
-  // 3) Click far away (center of graph) that should be outside hitRadius and ignored
-  await clickGraph(2, 2, {x:200, y:200});
-  let after3 = await countStudentPoints();
-  console.log('After clicking far away (should be ignored) =>', after3);
-  if (after3 !== after2) {
-    console.error('Expected no change after far click');
-    await browser.close();
-    process.exit(4);
-  }
-
-  // 4) Click duplicate on first vertex (-5,-3) should be ignored
-  await clickGraph(-5, -3);
-  let after4 = await countStudentPoints();
-  console.log('After duplicate click -5,-3 =>', after4);
-  if (after4 !== after3) {
-    console.error('Duplicate click should not add a new point');
-    await browser.close();
-    process.exit(5);
-  }
-
-  console.log('All interaction checks passed');
-  await browser.close();
-  process.exit(0);
-})().catch(err => {
-  console.error(err);
-  process.exit(1);
+test("computeExpectedPoints: empty points returns empty", () => {
+  const result = computeExpectedPoints([], { type: "reflect_x" });
+  assert.deepEqual(result, []);
 });
