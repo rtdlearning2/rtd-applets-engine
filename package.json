@@ -2,12 +2,13 @@
   "name": "applets-engine",
   "version": "1.0.0",
   "description": "For hosing interactive applets we'll make for iSpring courses",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/copy-config.mjs",
     "preview": "vite preview",
-    "test": "node tests/page-templates.smoke.mjs"
+    "test": "node tests/page-templates.smoke.mjs && node --test tests/interaction.test.js"
   },
   "repository": {
     "type": "git",

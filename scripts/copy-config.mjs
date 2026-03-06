@@ -16,6 +16,11 @@ const copyDir = async (from, to) => {
   }
 };
 
-await copyDir(path.join(root, "applets", "configs"), path.join(dist, "applets", "configs"));
-await copyDir(path.join(root, "applets", "activities"), path.join(dist, "applets", "activities"));
-await copyDir(path.join(root, "activity", "config"), path.join(dist, "activity", "config"));
+await copyDir(
+  path.join(root, "applets", "configs"),
+  path.join(dist, "applets", "configs"),
+);
+await copyDir(
+  path.join(root, "applets", "activities"),
+  path.join(dist, "applets", "activities"),
+);

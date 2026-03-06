@@ -5,6 +5,7 @@ import { validatePageConfig } from "./pageSchema.js";
 import { validateLegacyConfig } from "./legacySchema.js";
 import { registerActivity } from "./activityRegistry.js";
 import { registerValidator } from "./validatorRegistry.js";
+import { preloadPageTypes } from "../pages/index.js";
 
 export function getSrcParam() {
   const params = new URLSearchParams(window.location.search);
@@ -34,6 +35,7 @@ export async function loadConfigFromSrc() {
   const config = migrateConfig(rawConfig);
 
   await resolveActivity(config?.activity, src);
+  await preloadPageTypes(config?.pages ?? []);
 
   if (Array.isArray(config?.pages)) {
     const errors = validatePageConfig(config);
