@@ -1,4 +1,4 @@
-import{P as a}from"./pageTypes-s5bfgjb6.js";import{b as h}from"./index-CIyqXupa.js";import{s as b,r as f}from"./pageUi-D8KbPjWU.js";const $={type:a.MULTIPLE_CHOICE,initState:()=>({selected:[],submitted:!1,isCorrect:null,feedback:""}),render:({page:e,pageState:c})=>{const i=Array.isArray(e?.choices)?e.choices:[],o=!!e?.multiSelect,r=c?.selected??[],t=o?"checkbox":"radio",l=e?.id?`mc-${e.id}`:"mc",s=i.map((d,m)=>{const u=r.includes(String(m));return`
+import{P as a}from"./pageTypes-s5bfgjb6.js";import{b as h}from"./index-jMcgm5iu.js";import{s as b,r as f}from"./pageUi-D8KbPjWU.js";const $={type:a.MULTIPLE_CHOICE,initState:()=>({selected:[],submitted:!1,isCorrect:null,feedback:""}),render:({page:e,pageState:c})=>{const i=Array.isArray(e?.choices)?e.choices:[],o=!!e?.multiSelect,r=c?.selected??[],t=o?"checkbox":"radio",l=e?.id?`mc-${e.id}`:"mc",s=i.map((d,m)=>{const u=r.includes(String(m));return`
           <label class="choice-item">
             <input type="${t}" name="${l}" value="${m}" ${u?"checked":""}>
             <span>${d}</span>

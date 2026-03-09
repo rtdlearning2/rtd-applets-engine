@@ -17,7 +17,7 @@ function pageToConfig(page) {
 
 export const appletPage = {
   initState() {
-    return { subState: null, interactionAttached: false };
+    return { subState: null, interactionAttached: false, interactionCleanup: null };
   },
 
   render() {
@@ -39,15 +39,14 @@ export const appletPage = {
     }
 
     const subState = pageState.subState;
-    // Point the renderer at our mount div instead of #app.
-    subState._legacyRenderTarget = mountEl;
-    subState._legacyWrap = false;
+    const options  = { target: mountEl, wrap: false };
 
-    render(subState);
+    render(subState, options);
 
     // Attach pointer/graph interaction only once (survives page re-renders).
+    // Clean up any previous listener before re-attaching (guards against rebind).
     if (!pageState.interactionAttached) {
-      attachGraphInteraction(subState, () => render(subState));
+      pageState.interactionCleanup = attachGraphInteraction(subState, () => render(subState, options));
       pageState.interactionAttached = true;
     }
   }

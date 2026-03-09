@@ -1,4 +1,4 @@
-import{P as o}from"./pageTypes-s5bfgjb6.js";import{b as u}from"./index-CIyqXupa.js";import{s as i,r as f}from"./pageUi-D8KbPjWU.js";const w={type:o.TRUE_FALSE_GRID,initState:()=>({answers:{},submitted:!1,isCorrect:null,feedback:""}),render:({page:e,pageState:t})=>{const r=(Array.isArray(e?.statements)?e.statements:[]).map((l,n)=>{const d=t?.answers?.[n];return`
+import{P as o}from"./pageTypes-s5bfgjb6.js";import{b as u}from"./index-jMcgm5iu.js";import{s as i,r as f}from"./pageUi-D8KbPjWU.js";const w={type:o.TRUE_FALSE_GRID,initState:()=>({answers:{},submitted:!1,isCorrect:null,feedback:""}),render:({page:e,pageState:t})=>{const r=(Array.isArray(e?.statements)?e.statements:[]).map((l,n)=>{const d=t?.answers?.[n];return`
           <tr>
             <td>${l}</td>
             <td><button class="tf-btn ${d===!0?"selected":""}" data-index="${n}" data-value="true">True</button></td>

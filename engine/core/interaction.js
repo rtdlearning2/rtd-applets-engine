@@ -79,7 +79,7 @@ const handlers = {
 };
 
 export function attachGraphInteraction(state, onStateChange) {
-  document.addEventListener("pointerdown", function (e) {
+  const handler = (e) => {
     const svg = document.getElementById("graphSvg");
     if (!svg || !svg.contains(e.target)) return;
 
@@ -87,7 +87,10 @@ export function attachGraphInteraction(state, onStateChange) {
     const activityHandlers = state.activityHandlers ?? {};
     const combined = { ...handlers, ...activityHandlers };
     if (combined[mode]) combined[mode](state, e, svg, onStateChange);
-  });
+  };
 
-  console.log("Interaction attached");
+  document.addEventListener("pointerdown", handler);
+
+  // Return a cleanup function so callers can remove the listener on unmount/rebind
+  return () => document.removeEventListener("pointerdown", handler);
 }

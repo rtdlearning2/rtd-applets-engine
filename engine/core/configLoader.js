@@ -23,7 +23,7 @@ async function resolveActivity(activity, configSrc) {
 }
 
 export async function loadConfigFromSrc() {
-  const defaultSrc = "/applets/configs/applet-4-reflect-x-quadratic.json";
+  const defaultSrc = "applets/configs/applet-4-reflect-x-quadratic.json";
   const src = getSrcParam() || defaultSrc;
 
   const res = await fetch(src);

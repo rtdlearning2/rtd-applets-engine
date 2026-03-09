@@ -5,14 +5,18 @@
 
 // ─── Expression evaluator ─────────────────────────────────────────────────────
 
+const _exprCache = new Map();
+
 function compileExpr(expr) {
   if (!expr || typeof expr !== "string") return null;
+  if (_exprCache.has(expr)) return _exprCache.get(expr);
   try {
     // Replace ^ with ** so "x^2" is treated as exponentiation, not XOR
     const jsExpr = expr.replace(/\^/g, "**");
     // eslint-disable-next-line no-new-func
     const fn = new Function("x", `with(Math){ return (${jsExpr}); }`);
     fn(0); // smoke-test
+    _exprCache.set(expr, fn);
     return fn;
   } catch {
     return null;

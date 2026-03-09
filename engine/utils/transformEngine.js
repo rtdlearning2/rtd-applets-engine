@@ -80,3 +80,33 @@ export function computeExpectedPoints(originalPoints, transform) {
   // Default: no transform
   return originalPoints;
 }
+
+/**
+ * Derives the transformed curve config (fn + domain) from original.curve + transform.
+ * If the activity module exports deriveCurve, that hook is called first.
+ * Returns { fn, domain } or null if not applicable.
+ */
+export function deriveReflectedCurve(config, activity) {
+  // Activity hook takes priority — new transforms live entirely in the activity module
+  if (typeof activity?.deriveCurve === "function") {
+    return activity.deriveCurve(config);
+  }
+  const curve     = config.original?.curve;
+  const transform = config.transform?.type;
+  if (!curve || !transform) return null;
+  const { fn, domain } = curve;
+  if (transform === "reflect_y") {
+    return { fn: fn.replace(/\bx\b/g, "(-x)"), domain: [-domain[1], -domain[0]] };
+  }
+  if (transform === "reflect_x") {
+    return { fn: `-(${fn})`, domain: [...domain] };
+  }
+  if (transform === "scale") {
+    const sx = Number(config.transform?.sx ?? 1);
+    const sy = Number(config.transform?.sy ?? 1);
+    let derivedFn = sx !== 1 ? fn.replace(/\bx\b/g, `(x/${sx})`) : fn;
+    if (sy !== 1) derivedFn = `${sy} * (${derivedFn})`;
+    return { fn: derivedFn, domain: [sx * domain[0], sx * domain[1]] };
+  }
+  return null;
+}
