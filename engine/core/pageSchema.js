@@ -4,6 +4,7 @@ const ensureArray = (value) => Array.isArray(value) ? value : [];
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 
 const validators = {
+  "applet":     () => [],   // validation handled at runtime by the applet renderer
   "graph-plot": () => [],
   "drag-drop-fill": (page) => {
     const errors = [];

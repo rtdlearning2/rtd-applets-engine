@@ -12,6 +12,7 @@ const LAZY_PAGE_MAP = {
   "proof-steps":            () => import("./proofStepsPage.js").then(m => m.proofStepsPage),
   "graph-identify":         () => import("./graphIdentifyPage.js").then(m => m.graphIdentifyPage),
   "transformation-builder": () => import("./transformationBuilderPage.js").then(m => m.transformationBuilderPage),
+  "applet":                 () => import("./appletPage.js").then(m => m.appletPage),
 };
 
 export async function preloadPageTypes(pages) {

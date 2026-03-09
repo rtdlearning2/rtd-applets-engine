@@ -26,7 +26,11 @@ body.slide-mode {
 
 body {
   margin: 0;
-  font-family: system-ui, Segoe UI, Arial, sans-serif;
+  font-family:
+    system-ui,
+    Segoe UI,
+    Arial,
+    sans-serif;
   background: var(--bg);
   color: var(--text);
   font-size: clamp(14px, 1.05rem, 18px);
@@ -89,7 +93,6 @@ body.embed-mode {
 .embed-mode.slide-mode .left-panel {
   overflow: hidden;
 }
-
 
 .embed-mode .activity-copy > section {
   display: flex;
@@ -218,7 +221,6 @@ h1 {
 .main-container {
   max-width: var(--content-width);
   margin: 0 auto;
-  padding: var(--content-padding);
 }
 
 .activity-layout {
@@ -237,7 +239,7 @@ h1 {
   background-color: #f8f9fb;
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   margin-top: 0;
 }
 
@@ -331,7 +333,7 @@ svg text {
   cursor: grab;
   border: 1px solid #e5e7eb;
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform 0.12s ease;
 }
 
@@ -351,7 +353,7 @@ svg text {
 .drag-token.selected {
   border-color: #2563eb;
   background: #eff6ff;
-  box-shadow: 0 4px 12px rgba(37,99,235,0.18);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18);
 }
 
 .drag-token:focus-visible {
@@ -371,18 +373,22 @@ svg text {
   vertical-align: middle;
   padding: 6px 10px;
   background: #f9fafb;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .drop-zone.filled {
   border: 1px solid #d1d5db;
   background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .drop-zone.drag-over {
   border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
   background: #eff6ff;
 }
 
@@ -487,14 +493,16 @@ svg text {
   justify-content: flex-end;
   align-items: flex-start;
   gap: 12px;
+  border-radius: 4px;
   margin-top: 6px;
   margin-bottom: 8px;
   flex-wrap: wrap;
   position: sticky;
   top: 4px;
-  z-index: 5;
+  z-index: 50;
   background: #fff;
-  padding-top: 6px;
+  padding-top: 12px;
+  padding-bottom: 8px;
 }
 
 body.slide-mode .graph-toolbar {
@@ -534,7 +542,7 @@ body.slide-mode .graph-column {
   background: #fff;
   min-height: var(--graph-size);
   border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 @media (max-width: 900px) {
@@ -676,14 +684,16 @@ body.slide-mode .graph-column {
 }
 
 .graph-toolbar button {
-  font-size: 1em;
+  font-size: 1rem;
   padding: 8px 12px;
-  min-height: 44px;
+  min-height: 38px;
   border-radius: 6px;
   border: 1px solid #9ca3af;
   background: #fff;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.05s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.05s ease;
 }
 
 .graph-toolbar button:hover {
@@ -727,7 +737,10 @@ body.slide-mode .graph-column {
   font-size: 1.12em;
   cursor: pointer;
   box-shadow: 0 6px 14px rgba(22, 163, 74, 0.2);
-  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
 }
 
 .next-part-btn:hover {
@@ -789,7 +802,7 @@ body.slide-mode .graph-column {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   margin-top: 8px;
 }
 
@@ -874,7 +887,6 @@ body.slide-mode .graph-column {
 }
 
 .q3-panel .token-group {
-  display: flex;
   align-items: center;
   gap: 14px;
   margin-bottom: 6px;
@@ -882,10 +894,6 @@ body.slide-mode .graph-column {
 
 .q3-panel .token-label {
   margin: 0;
-}
-
-.q3-panel .token-row {
-  flex-wrap: nowrap;
 }
 
 .q3-panel .points-grid {
@@ -1004,7 +1012,8 @@ body.slide-mode .graph-column {
 }
 
 @keyframes zoneShake {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
   25% {
@@ -1401,7 +1410,7 @@ body.slide-mode .graph-toolbar button {
   right: 0;
   bottom: 0;
   height: 64px;
-  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.95));
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.95));
   pointer-events: none;
 }
 
@@ -1417,7 +1426,6 @@ body.slide-mode .graph-toolbar button {
   font-weight: 600;
   cursor: pointer;
 }
-
 
 .page-placeholder-list {
   margin: 0;
@@ -1709,4 +1717,107 @@ body.slide-mode .graph-toolbar button {
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   background: #fff;
+}
+
+/* ============================= */
+/* Table Input Step              */
+/* ============================= */
+
+.table-input-panel {
+  margin-top: 8px;
+}
+
+.values-table {
+  margin-top: 1rem;
+  border-collapse: collapse;
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tv-th {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 10px 22px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.tv-td {
+  border: 1px solid #e2e8f0;
+  padding: 5px 12px;
+  text-align: center;
+}
+
+.tv-x {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #374151;
+  min-width: 52px;
+}
+
+.tv-y {
+  background: #fff;
+  min-width: 110px;
+}
+
+.tv-y.tv-correct {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.tv-y.tv-wrong {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.tv-input {
+  width: 80px;
+  padding: 6px 10px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  color: #111;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tv-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.tv-input.tv-input-wrong {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.tv-input.tv-input-wrong:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.tv-value {
+  font-weight: 700;
+  color: #166534;
+  font-size: 15px;
+}
+
+.tv-check {
+  color: #16a34a;
+  font-weight: 700;
+  margin-left: 5px;
+  font-size: 15px;
 }

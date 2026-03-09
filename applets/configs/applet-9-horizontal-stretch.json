@@ -1,0 +1,150 @@
+{
+  "schemaVersion": "1",
+  "title": "Horizontal Stretch by Factor 2",
+  "pages": [
+    {
+      "type": "applet",
+      "showProgress": false,
+      "showTitle": false,
+      "showFooter": false,
+      "ui": {
+        "layout": {
+          "preset": "ppt1080p",
+          "overflowPolicy": "scroll",
+          "safePadding": "4px",
+          "contentPadding": "4px"
+        }
+      },
+      "grid": { "xmin": -10, "xmax": 10, "ymin": -5, "ymax": 5 },
+      "interaction": { "mode": "placePoints", "snapStep": 1, "hitRadiusPx": 20 },
+      "original": {
+        "curve": { "fn": "sqrt(x + 4) - 1", "domain": [-4, 10] },
+        "points": [[-4, -1], [-3, 0], [0, 1], [5, 2]]
+      },
+      "transform": { "type": "scale", "sx": 2, "sy": 1 },
+      "activity": {
+        "type": "transformations",
+        "activityModule": "../activities/transformations.js",
+        "config": { "tolerance": 0, "requireExactCount": true }
+      },
+      "feedback": { "showExpectedPointsOnFail": false },
+      "applet": {
+        "heading": "Horizontal Stretch",
+        "progressLabel": "Exploration 2",
+        "graphLabels": {
+          "original": "y = f(x)",
+          "transformed": "y = k(x)"
+        },
+        "steps": [
+          {
+            "id": "q1",
+            "type": "graph-plot",
+            "questionLabel": "Question 1 (of 4)",
+            "instructions": "The graph of <strong>f(x) = \u221a(x + 4) \u2212 1</strong> is shown. On the same grid, construct a new graph of <strong>y = k(x)</strong> by multiplying all x-coordinates by 2.",
+            "successMessage": "CORRECT - Your graph is bang on!",
+            "explanation": "<p>Each point (x, y) on f(x) maps to (2x, y) on k(x) \u2014 the x-coordinate is doubled while the y-coordinate stays the same.</p><p>This stretches the graph <b>horizontally</b> by a factor of 2.</p>",
+            "nextLabel": "Continue to Part 2 \u2192"
+          },
+          {
+            "id": "q2",
+            "type": "drag-drop-sentences",
+            "questionLabel": "Question 2",
+            "instructions": "Is the resulting stretch horizontal or vertical?",
+            "sentences": [
+              {
+                "prefix": "The resulting stretch is",
+                "slots": [{ "id": "direction", "group": "direction" }],
+                "suffix": "."
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "Direction:",
+                "group": "direction",
+                "tokens": [
+                  { "value": "horizontal", "group": "direction" },
+                  { "value": "vertical",   "group": "direction" }
+                ]
+              }
+            ],
+            "correctAnswer": { "direction": "horizontal" },
+            "successText": "When x-coordinates are multiplied by a factor, the graph expands horizontally. The y-coordinates are unchanged, so there is no vertical movement.",
+            "nextLabel": "Continue to Part 3 \u2192"
+          },
+          {
+            "id": "q3",
+            "type": "drag-drop-mapping",
+            "questionLabel": "Question 3",
+            "instructions": "State the <b>mapping rule</b> that describes the change in all coordinates from <strong>y = f(x)</strong> to <strong>y = k(x)</strong>.",
+            "slots": [
+              { "id": "x", "label": "NEW X" },
+              { "id": "y", "label": "NEW Y" }
+            ],
+            "tokenBanks": [
+              {
+                "label": "X-values", "group": "x",
+                "tokens": [
+                  { "value": "x",  "group": "x" },
+                  { "value": "2x", "group": "x" },
+                  { "value": "\u2212x", "group": "x" }
+                ]
+              },
+              {
+                "label": "Y-values", "group": "y",
+                "tokens": [
+                  { "value": "y",  "group": "y" },
+                  { "value": "2y", "group": "y" },
+                  { "value": "\u2212y", "group": "y" }
+                ]
+              }
+            ],
+            "correctAnswer": { "x": "2x", "y": "y" },
+            "hint": "Each x-coordinate is multiplied by 2. What happens to y?",
+            "successText": "The mapping rule is (x, y) \u2192 (2x, y). The x-coordinate doubles and the y-coordinate stays the same.",
+            "nextLabel": "Continue to Part 4 \u2192"
+          },
+          {
+            "id": "q4",
+            "type": "drag-drop-sentences",
+            "questionLabel": "Question 4",
+            "instructions": "<strong>Drag &amp; drop</strong> to describe the invariant point.",
+            "sentences": [
+              {
+                "prefix": "The invariant point is",
+                "slots": [{ "id": "p1", "group": "point" }],
+                "suffix": "."
+              },
+              {
+                "prefix": "It lies on the",
+                "slots": [{ "id": "axis", "group": "axis" }],
+                "suffix": "."
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "Points:",
+                "group": "point",
+                "source": "computed:invariant-points",
+                "distractors": [[-4, -1], [5, 2]]
+              },
+              {
+                "label": "Axis:",
+                "group": "axis",
+                "tokens": [
+                  { "value": "x-axis", "group": "axis" },
+                  { "value": "y-axis", "group": "axis" }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "p1": "computed:invariant-point",
+              "axis": "y-axis"
+            },
+            "successText": "The mapping (x, y) \u2192 (2x, y) fixes any point where x = 0. The curve crosses the y-axis at (0, 1), so that is the only invariant point. It lies on the y-axis.",
+            "nextLabel": "Finish Exploration \u2192"
+          }
+        ]
+      }
+    }
+  ]
+}

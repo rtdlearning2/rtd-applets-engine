@@ -1,1088 +1,589 @@
-// engine/renderer.js
+// engine/renderers/renderer.js
+// Config-driven coordinator: reads config.applet.steps, delegates rendering
+// to per-step modules, and owns all event-handler attachment.
 
-import { validate } from "../core/validatorRegistry.js";
-import { renderGrid } from "./gridRenderer.js";
-import { renderSeries } from "./seriesRenderer.js";
+import { validate }                      from "../core/validatorRegistry.js";
+import { renderGrid }                    from "./gridRenderer.js";
+import { renderSeries }                  from "./seriesRenderer.js";
+import { renderGraphPlotPanel }          from "./steps/graphPlotStep.js";
+import { renderDragDropMappingPanel }    from "./steps/dragDropMappingStep.js";
+import { renderDragDropSentencesPanel }  from "./steps/dragDropSentencesStep.js";
+import { renderTableInputPanel, evaluateTableFn } from "./steps/tableInputStep.js";
+import {
+  validateDragDropAnswers,
+  resolveSolutionAnswers,
+  getStepSlotIds
+} from "../core/computedTokens.js";
 
-export function render(state) {
-  const container = document.getElementById("app");
-  const renderTarget = state?._legacyRenderTarget ?? container;
-  const wrapLegacy = state?._legacyWrap !== undefined ? state._legacyWrap : true;
-  if (!renderTarget) return;
+// ─── SVG builder ─────────────────────────────────────────────────────────────
 
-  const config = state.config;
-  const originalPoints = config.original.points;
-  const expectedPoints = state.expectedPoints;
+/**
+ * Derives the transformed curve config from original.curve + transform.
+ * If the activity module exports deriveCurve, that is called first.
+ * Returns { fn, domain } or null if not applicable.
+ */
+function deriveReflectedCurve(config, activity) {
+  // Activity hook takes priority — new transforms live entirely in the activity module
+  if (typeof activity?.deriveCurve === "function") {
+    return activity.deriveCurve(config);
+  }
+  // Built-in fallback for known transform types
+  const curve     = config.original?.curve;
+  const transform = config.transform?.type;
+  if (!curve || !transform) return null;
+  const { fn, domain } = curve;
+  if (transform === "reflect_y") {
+    return { fn: fn.replace(/\bx\b/g, "(-x)"), domain: [-domain[1], -domain[0]] };
+  }
+  if (transform === "reflect_x") {
+    return { fn: `-(${fn})`, domain: [...domain] };
+  }
+  if (transform === "scale") {
+    const sx = Number(config.transform?.sx ?? 1);
+    const sy = Number(config.transform?.sy ?? 1);
+    let derivedFn = sx !== 1 ? fn.replace(/\bx\b/g, `(x/${sx})`) : fn;
+    if (sy !== 1) derivedFn = `${sy} * (${derivedFn})`;
+    return { fn: derivedFn, domain: [sx * domain[0], sx * domain[1]] };
+  }
+  return null;
+}
 
-  // Raw clicks (for counters / attempts)
-  const rawStudentPoints = state.studentPoints ?? [];
-
-  // Safeguard: orderedStudentPoints may not exist yet
+function buildSvg(state, width, height) {
+  const config               = state.config;
+  const activity             = state.activity ?? null;
+  const originalPoints       = config.original?.points ?? [];
+  const expectedPoints       = state.expectedPoints;
+  const rawStudentPoints     = state.studentPoints       ?? [];
   const orderedStudentPoints = state.orderedStudentPoints ?? [];
 
-  const isSlideMode = state.uiMode === "slide";
-  const layout = config?.ui?.layout ?? {};
-  const graphSize = Number(layout.graphSize);
-  const width = Number.isFinite(graphSize) && graphSize > 0
-    ? graphSize
-    : (isSlideMode ? 520 : 600);
-  const height = Number.isFinite(graphSize) && graphSize > 0
-    ? graphSize
-    : (isSlideMode ? 520 : 600);
-  const explanationHtml = "<p>Notice how the y-coordinate of all points on the transformed graph g(x) are the <i>negative</i> of the y-coordinate on the f(x).</p><p>This is a <b>vertical reflection</b> about the x-axis.</p>";
-  const feedbackClass = state.lastSubmitCorrect
-    ? "feedback-success"
-    : (state.submitted && state.lastSubmitCorrect === false ? "feedback-error" : "");
-  const progressLabel = config.activity?.progressLabel ?? "Exploration 2 of 8";
-  const slideOpen = Boolean(state.slideExplanationOpen?.[state.currentStep]);
-  const persistedReference = Array.isArray(state.persistedReferenceGraph)
-    ? state.persistedReferenceGraph
-    : (Array.isArray(state.persistedGraphPoints) ? state.persistedGraphPoints : null);
+  const applet         = state.applet;
+  const persistedGraph = applet?.persistedGraph ?? null;
+  const showPersisted  = Boolean(persistedGraph?.length);
 
-  const getGraphDisplayState = (activeQuestion, appState) => {
-    if (activeQuestion === 1) return null;
-    return Array.isArray(appState.persistedReferenceGraph) && appState.persistedReferenceGraph.length > 0
-      ? appState.persistedReferenceGraph
-      : (Array.isArray(appState.persistedGraphPoints) ? appState.persistedGraphPoints : null);
-  };
-
-  const displayReferencePoints = getGraphDisplayState(state.currentStep, state);
-  const showPersistedGraph = state.currentStep >= 2 && displayReferencePoints && displayReferencePoints.length > 0;
-  const minusSign = "\u2212";
-  const part2Expected = { x: "x", y: `${minusSign}y` };
-  const part2Answer = state.part2Answer ?? { x: null, y: null };
-  const part2Ready = Boolean(part2Answer.x && part2Answer.y);
-  const part2Correct = Boolean(state.part2Correct);
-  const part2Submitted = Boolean(state.part2Submitted);
-  const part2SlotCorrect = part2Submitted ? {
-    x: part2Answer.x === part2Expected.x,
-    y: part2Answer.y === part2Expected.y
-  } : { x: false, y: false };
-  const part2Invalid = part2Submitted && !part2Correct ? {
-    x: part2Answer.x !== part2Expected.x,
-    y: part2Answer.y !== part2Expected.y
-  } : { x: false, y: false };
-  const renderMathVar = (value) => {
-    if (!value) return "";
-    if (value.startsWith(minusSign)) {
-      const v = value.slice(minusSign.length);
-      return `<span class="math-minus">${minusSign}</span><span class="math-var">${v}</span>`;
-    }
-    return `<span class="math-var">${value}</span>`;
-  };
-
-  const renderMathNum = (value) => {
-    if (value === null || value === undefined) return "";
-    const str = String(value);
-    if (str.startsWith("-")) {
-      return `<span class="math-minus">${minusSign}</span><span class="math-num">${str.slice(1)}</span>`;
-    }
-    if (str.startsWith(minusSign)) {
-      return `<span class="math-minus">${minusSign}</span><span class="math-num">${str.slice(minusSign.length)}</span>`;
-    }
-    return `<span class="math-num">${str}</span>`;
-  };
-
-  const renderPointHtml = (point) => {
-    const [x, y] = point;
-    return `<span class="rule-math">(</span>${renderMathNum(x)}<span class="rule-math">,</span> ${renderMathNum(y)}<span class="rule-math">)</span>`;
-  };
-
-  const part2Tokens = [
-    { value: "x", html: renderMathVar("x"), group: "x" },
-    { value: `${minusSign}x`, html: renderMathVar(`${minusSign}x`), group: "x" },
-    { value: "y", html: renderMathVar("y"), group: "y" },
-    { value: `${minusSign}y`, html: renderMathVar(`${minusSign}y`), group: "y" }
-  ];
-
-  const computeXIntercepts = (points) => {
-    const intercepts = [];
-    for (let i = 0; i < points.length - 1; i++) {
-      const [x1, y1] = points[i];
-      const [x2, y2] = points[i + 1];
-      if (y1 === 0) intercepts.push([x1, 0]);
-      if (y2 === 0) intercepts.push([x2, 0]);
-      if ((y1 < 0 && y2 > 0) || (y1 > 0 && y2 < 0)) {
-        const t = (0 - y1) / (y2 - y1);
-        const x = x1 + t * (x2 - x1);
-        const xRounded = Math.round(x * 1000) / 1000;
-        intercepts.push([xRounded, 0]);
-      }
-    }
-    const seen = new Set();
-    return intercepts.filter(p => {
-      const key = `${p[0]},${p[1]}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  };
-
-  const part3ExpectedPoints = computeXIntercepts(originalPoints);
-  const part3ExpectedKeys = part3ExpectedPoints.map(p => `${p[0]},${p[1]}`);
-  const part3Answer = state.part3Answer ?? { p1: null, p2: null, coordType: null, value: null };
-  const part3Ready = Boolean(part3Answer.p1 && part3Answer.p2 && part3Answer.coordType && part3Answer.value);
-  const part3Correct = Boolean(state.part3Correct);
-  const part3Submitted = Boolean(state.part3Submitted);
-  const part3Resolved = part3Submitted && part3Correct;
-  const showSolutionAfterIncorrect = state.showSolution && state.lastSubmitCorrect === false;
-  const showSolutionAfterCorrect = state.lastSubmitCorrect === true;
-  const hideQ1Intro = showSolutionAfterIncorrect || showSolutionAfterCorrect;
-  const part3ExpectedSet = new Set(part3ExpectedKeys);
-  const part3SamePoint = part3Answer.p1 && part3Answer.p2 && part3Answer.p1 === part3Answer.p2;
-  const part3Invalid = part3Submitted && !part3Correct ? {
-    p1: !part3Answer.p1 || !part3ExpectedSet.has(part3Answer.p1) || part3SamePoint,
-    p2: !part3Answer.p2 || !part3ExpectedSet.has(part3Answer.p2) || part3SamePoint,
-    coordType: part3Answer.coordType !== "y-coordinate",
-    value: part3Answer.value !== "0"
-  } : { p1: false, p2: false, coordType: false, value: false };
-  const part3SlotCorrect = part3Submitted ? {
-    p1: Boolean(part3Answer.p1 && part3ExpectedSet.has(part3Answer.p1) && !part3SamePoint),
-    p2: Boolean(part3Answer.p2 && part3ExpectedSet.has(part3Answer.p2) && !part3SamePoint),
-    coordType: part3Answer.coordType === "y-coordinate",
-    value: part3Answer.value === "0"
-  } : { p1: false, p2: false, coordType: false, value: false };
-
-  const part3PointOptions = [];
-  const part3PointHtml = new Map();
-  const addPointOption = (p) => {
-    const key = `${p[0]},${p[1]}`;
-    if (part3PointHtml.has(key)) return;
-    part3PointHtml.set(key, renderPointHtml(p));
-    part3PointOptions.push({ key, point: p });
-  };
-
-  part3ExpectedPoints.forEach(addPointOption);
-  originalPoints.forEach(addPointOption);
-  expectedPoints.forEach(p => addPointOption([p[0], p[1]]));
-
-  const part3AllowedPointKeys = [
-    "0,-1",
-    "1,0",
-    "0,1",
-    "4,0"
-  ];
-
-  const part3PointTiles = part3AllowedPointKeys
-    .filter(key => part3PointHtml.has(key))
-    .map(key => ({
-      type: "point",
-      value: key,
-      html: part3PointHtml.get(key)
-    }));
-
-  const part3CoordTiles = [
-    { type: "coordType", value: "x-coordinate", html: "x-coordinate" },
-    { type: "coordType", value: "y-coordinate", html: "y-coordinate" }
-  ];
-
-  const part3ValueTiles = [
-    { type: "value", value: "0", html: renderMathNum("0") },
-    { type: "value", value: `${minusSign}1`, html: renderMathNum(`${minusSign}1`) }
-  ];
-
-  const part3SuccessBlock = `
-    <div class="explanation-box success-reveal status-success ${isSlideMode ? "slide-compact" : ""}">
-      <div class="status-title">Correct — nice work!</div>
-      <div class="explanation-inline">
-        <span class="status-text">Notice how each y-coordinate is replaced by its opposite value.</span>
-        ${isSlideMode ? `
-          <button class="slide-explanation-toggle inline" data-step="${state.currentStep}">
-            ${slideOpen ? "Hide explanation" : "Show explanation"}
-          </button>
-        ` : ""}
-      </div>
-      ${isSlideMode ? `
-        <div class="slide-explanation-text ${slideOpen ? "open" : ""}">
-          A reflection in the x-axis keeps x-values the same and multiplies y-values by ${minusSign}1. Points on the x-axis have y = 0, so they do not move under the reflection. Therefore, the shared points are the x-intercepts, and they have the same y-coordinate, which is 0.
-        </div>
-      ` : `A reflection in the x-axis keeps x-values the same and multiplies y-values by ${minusSign}1. Points on the x-axis have y = 0, so they do not move under the reflection. Therefore, the shared points are the x-intercepts, and they have the same y-coordinate, which is 0.`}
-      <button id="nextPartBtn" class="next-part-btn">Finish Exploration →</button>
-    </div>
-  `;
-
-  const toObj = ([x, y]) => ({ x, y });
+  const toObj      = ([x, y]) => ({ x, y });
   const seriesList = [];
 
-  let svg = `<svg id="graphSvg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
+  const svgPad = 14; // extra pixels on each side so edge dots aren't clipped
+  let svg = `<svg id="graphSvg" width="${width}" height="${height}" viewBox="${-svgPad} ${-svgPad} ${width + 2 * svgPad} ${height + 2 * svgPad}" xmlns="http://www.w3.org/2000/svg">`;
   svg = renderGrid(svg, state.view, { width, height });
 
-  if (originalPoints.length > 0) {
-    const pts = originalPoints.map(toObj);
-    seriesList.push({
-      type: "polyline",
-      points: pts,
-      style: { stroke: "#2563eb", strokeWidth: 2 }
-    });
-    seriesList.push({
-      type: "points",
-      points: pts,
-      style: { fill: "#2563eb", r: 6 }
-    });
+  // Resolve the active table-input step (if any) early — used by both the
+  // original-series suppression logic and the plotAsEntered block below.
+  const tableStepCfg = (applet && config.applet?.steps?.[applet.currentStep]?.type === "table-input")
+    ? config.applet.steps[applet.currentStep]
+    : null;
+  const tableStepState = tableStepCfg ? applet.steps[tableStepCfg.id] : null;
+  const isPlotAsEntered = tableStepCfg?.plotAsEntered === true;
+  // During a plotAsEntered step, suppress only original points whose x is a table row
+  // (those are managed by the plotAsEntered block). Non-table points stay visible.
+  const tableRowSet = isPlotAsEntered
+    ? new Set((tableStepCfg.table?.rows ?? []).map(r => String(r)))
+    : null;
+  const hideOriginalCurve = isPlotAsEntered && !tableStepState?.graphed;
+
+  // Coordinate label formatter — integers clean, decimals up to 2dp with no trailing zeros
+  const fmtCoord = n => Number.isInteger(n) ? String(n) : parseFloat(n.toFixed(2)).toString();
+  const ptLabel  = (x, y) => `(${fmtCoord(x)}, ${fmtCoord(y)})`;
+
+  // Current step config — used by the solution overlay guard below
+  const currentStepCfg = applet ? config.applet?.steps?.[applet.currentStep] : null;
+
+  // Filter original points: during plotAsEntered, suppress only the table-row x-values
+  // (those appear via the plotAsEntered block as typed). Non-table points stay visible.
+  const visibleOriginalPoints = tableRowSet
+    ? originalPoints.filter(([x]) => !tableRowSet.has(String(x)))
+    : originalPoints;
+
+  const originalCurve = config.original?.curve;
+  if (originalCurve) {
+    // Continuous curve + discrete key points (e.g. Applet 6: √x − 2)
+    if (!hideOriginalCurve) {
+      seriesList.push({ type: "curve", fn: originalCurve.fn, domain: originalCurve.domain, style: { stroke: "#2563eb", strokeWidth: 2 } });
+    }
+    if (visibleOriginalPoints.length > 0) {
+      const origLabels = visibleOriginalPoints.map(([x, y]) => ptLabel(x, y));
+      seriesList.push({ type: "points", points: visibleOriginalPoints.map(toObj), labels: origLabels, style: { fill: "#2563eb", r: 6 } });
+    }
+  } else if (visibleOriginalPoints.length > 0) {
+    const pts      = visibleOriginalPoints.map(toObj);
+    const ptLabels = visibleOriginalPoints.map(([x, y]) => ptLabel(x, y));
+    seriesList.push({ type: "polyline", points: pts, style: { stroke: "#2563eb", strokeWidth: 2 } });
+    seriesList.push({ type: "points",   points: pts, labels: ptLabels, style: { fill: "#2563eb", r: 6 } });
   }
 
-  // Student polyline connecting the student's actual clicked points (always show)
-  if (!showPersistedGraph && rawStudentPoints.length > 1) {
-    // Sort student points left-to-right by x value for the polyline
-    const sortedStudentPoints = [...rawStudentPoints].sort((a, b) => a[0] - b[0]);
-    seriesList.push({
-      type: "polyline",
-      points: sortedStudentPoints.map(toObj),
-      style: { stroke: !state.submitted ? "#6d28d9" : (state.lastSubmitCorrect ? "#16a34a" : "#dc2626"), strokeWidth: !state.submitted ? 3 : (state.lastSubmitCorrect ? 4 : 3), opacity: 1 }
-    });
-  }
+  if (showPersisted) {
+    // Persisted graph from a completed graph-plot step
+    const reflectedCurve = deriveReflectedCurve(config, activity);
+    if (reflectedCurve) {
+      seriesList.push({ type: "curve", fn: reflectedCurve.fn, domain: reflectedCurve.domain, style: { stroke: "#16a34a", strokeWidth: 3 } });
+    } else {
+      const pts = persistedGraph.map(toObj);
+      seriesList.push({ type: "polyline", points: pts, style: { stroke: "#16a34a", strokeWidth: 5 } });
+    }
+    const pts = persistedGraph.map(toObj);
+    seriesList.push({ type: "points", points: pts, style: { fill: "#16a34a", r: 6 } });
+  } else {
+    // Active graph-plot step: live student attempt
+    const stepState = applet
+      ? applet.steps[config.applet?.steps?.[applet.currentStep]?.id]
+      : null;
+    const submitted = stepState?.submitted ?? state.submitted;
+    const correct   = stepState?.correct   ?? state.lastSubmitCorrect;
 
-  // Student Attempt (faint line)
-  if (!showPersistedGraph && rawStudentPoints.length > 0) {
-    const mode = state.config.interaction?.mode || "placePoints";
-    // Determine student color based on submit state:
-    // - working (not submitted): dark purple
-    // - submitted & correct: green
-    // - submitted & incorrect: red
-    const workingColor = "#6d28d9"; // purple-700
-    const correctColor = "#16a34a"; // green-600
-    const incorrectColor = "#dc2626"; // red-600
-    const studentColor = !state.submitted
-      ? workingColor
-      : (state.lastSubmitCorrect ? correctColor : incorrectColor);
+    const studentColor = !submitted ? "#6d28d9" : (correct ? "#16a34a" : "#dc2626");
+    const strokeWidth  = !submitted ? 3 : (correct ? 4 : 3);
+    const mode = config.interaction?.mode || "placePoints";
 
-    const studentStrokeWidth = !state.submitted ? 3 : (state.lastSubmitCorrect ? 4 : 3);
+    const isCurveApplet = Boolean(config.original?.curve);
 
     if (mode === "placePoints") {
-      // Show raw student clicks as points in the student color.
-      seriesList.push({
-        type: "points",
-        points: rawStudentPoints.map(toObj),
-        style: { fill: studentColor, r: 6 }
-      });
-    } else if (rawStudentPoints.length > 1) {
-      seriesList.push({
-        type: "polyline",
-        points: rawStudentPoints.map(toObj),
-        style: { stroke: studentColor, strokeWidth: studentStrokeWidth, opacity: 0.25 }
-      });
+      // Connecting line through placed points (sorted left-to-right by x).
+      // Curve applets use a Catmull-Rom spline for a smooth preview.
+      if (rawStudentPoints.length > 1) {
+        const sorted     = [...rawStudentPoints].sort((a, b) => a[0] - b[0]);
+        const lineType   = isCurveApplet ? "smooth-curve" : "polyline";
+        seriesList.push({ type: lineType, points: sorted.map(toObj), style: { stroke: studentColor, strokeWidth, opacity: 1 } });
+      }
+      if (rawStudentPoints.length > 0) {
+        const stuLabels = rawStudentPoints.map(([x, y]) => ptLabel(x, y));
+        seriesList.push({ type: "points", points: rawStudentPoints.map(toObj), labels: stuLabels, style: { fill: studentColor, r: 6 } });
+      }
+    } else {
+      if (rawStudentPoints.length > 1) {
+        const sorted = [...rawStudentPoints].sort((a, b) => a[0] - b[0]);
+        seriesList.push({ type: "polyline", points: sorted.map(toObj), style: { stroke: studentColor, strokeWidth, opacity: 1 } });
+      }
+      if (rawStudentPoints.length > 0) {
+        seriesList.push({ type: "polyline", points: rawStudentPoints.map(toObj), style: { stroke: studentColor, strokeWidth, opacity: 0.25 } });
+      }
+    }
+
+    // Clean ordered polyline (masked to matched vertices) — linear applets only
+    if (!isCurveApplet && orderedStudentPoints.length > 1) {
+      const matchedLookup = new Set(orderedStudentPoints.map(p => `${p[0]},${p[1]}`));
+      const cleanPts  = expectedPoints.map(toObj);
+      const cleanMask = expectedPoints.map(p => matchedLookup.has(`${p[0]},${p[1]}`));
+      seriesList.push({ type: "polyline", points: cleanPts, segmentMask: cleanMask, style: { stroke: studentColor, strokeWidth, opacity: 1 } });
+    }
+
+    // Solution overlay: only for graph-plot steps (table-input/drag-drop must not trigger this)
+    const showSolution = stepState?.showSolution ?? state.showSolution;
+    if (currentStepCfg?.type === "graph-plot" && (submitted || showSolution) && expectedPoints.length > 0) {
+      const reflectedCurve = deriveReflectedCurve(config, activity);
+      if (reflectedCurve) {
+        seriesList.push({ type: "curve", fn: reflectedCurve.fn, domain: reflectedCurve.domain, style: { stroke: "#16a34a", strokeWidth: 3 } });
+      } else {
+        seriesList.push({ type: "polyline", points: expectedPoints.map(toObj), style: { stroke: "#16a34a", strokeWidth: 5 } });
+      }
+      const solLabels = expectedPoints.map(([x, y]) => ptLabel(x, y));
+      seriesList.push({ type: "points", points: expectedPoints.map(toObj), labels: solLabels, style: { fill: "#16a34a", r: 6 } });
     }
   }
 
-  // Student Clean (solid line)
-  if (!showPersistedGraph && orderedStudentPoints.length > 1) {
-    const matchedLookup = new Set(
-      orderedStudentPoints.map(p => `${p[0]},${p[1]}`)
-    );
-    const cleanLinePoints = state.expectedPoints.map(toObj);
-    const cleanLineMask = state.expectedPoints.map(p =>
-      matchedLookup.has(`${p[0]},${p[1]}`)
-    );
-
-    seriesList.push({
-      type: "polyline",
-      points: cleanLinePoints,
-      segmentMask: cleanLineMask,
-      style: { stroke: !state.submitted ? "#6d28d9" : (state.lastSubmitCorrect ? "#16a34a" : "#dc2626"), strokeWidth: !state.submitted ? 3 : (state.lastSubmitCorrect ? 4 : 3), opacity: 1 }
-    });
-  }
-
-  // Student Points (raw)
-  // Note: raw student points are already added above (either as points or part
-  // of the attempt polyline). Additionally, draw matched expected points (if
-  // any) with a distinct style so students see which expected vertices were
-  // recognized by the system.
-  if (state.expectedPoints && state.expectedPoints.length > 0) {
-  // Do not draw matched expected points as separate markers during attempts.
-
-  // Solution overlay (never before submit)
-  if (state.submitted || showPersistedGraph) {
-    const solutionPoints = showPersistedGraph ? displayReferencePoints : expectedPoints;
-    if ((state.showSolution || showPersistedGraph) && solutionPoints.length > 0) {
-      const pts = solutionPoints.map(toObj);
-      seriesList.push({
-        type: "polyline",
-        points: pts,
-        style: { stroke: "#16a34a", strokeWidth: 5 }
-      });
-      seriesList.push({
-        type: "points",
-        points: pts,
-        style: { fill: "#16a34a", r: 6 }
-      });
+  // Table-input: plot correctly entered values on the graph as they're filled in
+  if (isPlotAsEntered && tableStepState) {
+    const fmtN = n => Number.isInteger(n) ? String(n) : parseFloat(n.toFixed(2)).toString();
+    const tablePts = (tableStepCfg.table?.rows ?? [])
+      .filter(x => tableStepState.cellCorrect?.[String(x)] === true)
+      .map(x => ({ x: Number(x), y: parseFloat(tableStepState.cellValues?.[String(x)]) }))
+      .filter(p => Number.isFinite(p.y));
+    if (tablePts.length > 0) {
+      const labels = tablePts.map(p => `(${fmtN(p.x)}, ${fmtN(p.y)})`);
+      seriesList.push({ type: "points", points: tablePts, labels, style: { fill: "#2563eb", r: 6 } });
     }
-  }
-
   }
 
   svg = renderSeries(svg, seriesList, state.view, { width, height });
+  svg += "</svg>";
+  return svg;
+}
 
-  svg += `</svg>`;
+// ─── Step panel dispatcher ────────────────────────────────────────────────────
 
-  const stepResolvedClass = (state.currentStep === 2 && part2Submitted && (part2Correct || state.part2ShowSolution))
-    ? " step-2-resolved"
-    : "";
+function renderStepPanel(step, stepState, state, isSlideMode) {
+  switch (step.type) {
+    case "graph-plot":
+      return renderGraphPlotPanel(step, stepState, state.applet, isSlideMode);
+    case "drag-drop-mapping":
+      return renderDragDropMappingPanel(step, stepState, isSlideMode);
+    case "drag-drop-sentences":
+      return renderDragDropSentencesPanel(step, stepState, state.config, isSlideMode, state.activity);
+    case "table-input":
+      return renderTableInputPanel(step, stepState, isSlideMode);
+    default:
+      return `<div class="question-label">Unknown step type: ${step.type}</div>`;
+  }
+}
 
-  const legacyContentHtml = `
-    <div class="main-container step-${state.currentStep}${stepResolvedClass}">
+// ─── Toolbar ─────────────────────────────────────────────────────────────────
+
+function allSlotsFilled(step, stepState) {
+  return getStepSlotIds(step).every(id => Boolean(stepState.answers?.[id]));
+}
+
+function renderToolbar(step, stepState) {
+  const isDragDrop    = step.type === "drag-drop-mapping" || step.type === "drag-drop-sentences";
+  const isTableInput  = step.type === "table-input";
+  const showingResult = stepState.correct || stepState.showSolution;
+  const submitDisabled =
+    (step.type === "graph-plot" && showingResult) ||
+    (isDragDrop   && !allSlotsFilled(step, stepState)) ||
+    (isTableInput && !stepState.allCorrect);
+
+  const submitLabel = (isTableInput && step.graphButtonLabel) ? step.graphButtonLabel : "Submit";
+
+  return `
+    <div class="graph-toolbar">
+      <div class="controls">
+        <button id="undoBtn">Undo</button>
+        <button id="resetBtn">Reset</button>
+        <button id="submitBtn" class="submit-btn" ${submitDisabled ? "disabled" : ""}>${submitLabel}</button>
+        ${stepState.submitted && !stepState.correct ? `
+          <button id="solutionBtn">See Solution</button>
+          <button id="tryAgainBtn" style="margin-left:6px;">Try Again</button>
+        ` : ""}
+      </div>
+    </div>
+  `;
+}
+
+// ─── Main render entry point ──────────────────────────────────────────────────
+
+export function render(state) {
+  const container    = document.getElementById("app");
+  const renderTarget = state?._legacyRenderTarget ?? container;
+  const wrapLegacy   = state?._legacyWrap !== undefined ? state._legacyWrap : true;
+  if (!renderTarget) return;
+
+  const config       = state.config;
+  const appletConfig = config?.applet;
+  const isSlideMode  = state.uiMode === "slide";
+  const layout       = config?.ui?.layout ?? {};
+  const graphSize    = Number(layout.graphSize);
+  const size = Number.isFinite(graphSize) && graphSize > 0
+    ? graphSize : (isSlideMode ? 520 : 600);
+
+  // ── Non-applet fallback: just render the SVG graph ───────────────────────
+  if (!appletConfig?.steps?.length) {
+    const svgHtml = buildSvg(state, size, size);
+    const html = wrapLegacy
+      ? `<div class="slide-scale-root"><div class="slide-scale-inner"><div class="slide-viewport"><div class="slide-safe-area">${svgHtml}</div></div></div></div>`
+      : svgHtml;
+    renderTarget.innerHTML = html;
+    window.dispatchEvent(new Event("applet:rendered"));
+    return;
+  }
+
+  // ── Applet mode ───────────────────────────────────────────────────────────
+  const applet    = state.applet;
+  const steps     = appletConfig.steps;
+  const stepIdx   = applet.currentStep;
+  const step      = steps[stepIdx];
+  const stepState = applet.steps[step.id];
+
+  const svgHtml       = buildSvg(state, size, size);
+  const stepPanelHtml = renderStepPanel(step, stepState, state, isSlideMode);
+  const toolbarHtml   = renderToolbar(step, stepState);
+
+  const graphLabels    = appletConfig.graphLabels ?? {};
+  const showTransLabel = Boolean(
+    applet.persistedGraph?.length ||
+    (step.type === "graph-plot" && (stepState?.correct || stepState?.showSolution))
+  );
+
+  const resolvedClass = stepState.submitted && (stepState.correct || stepState.showSolution)
+    ? " step-resolved" : "";
+
+  const contentHtml = `
+    <div class="main-container step-${stepIdx + 1}${resolvedClass}">
       <div class="activity-layout">
+
         <div class="activity-copy left-panel">
-        <div class="page-heading">
-          ${state.currentStep === 3 ? "" : `<div class="heading-label">Exploration 2</div>`}
-          <div class="heading-title">Reflection in the <span class="nowrap">x-axis</span></div>
-        </div>
-
-        <section style="margin-bottom:18px;padding-top:8px;">
-          ${state.currentStep === 1 ? `
-            ${hideQ1Intro ? "" : `
-              <div class="question-label">Question 1 (of 3)</div>
-              <div class="task-instructions">Sketch the mirror image graph, <strong>y = g(x)</strong>, by clicking where the 5 connection points should be, and using the above controls.</div>
-            `}
-            ${state.feedback && state.lastSubmitCorrect === false && !showSolutionAfterIncorrect ? `
-              <div id="feedback" class="graph-feedback ${feedbackClass}">
-                ${state.feedback}
-              </div>
-            ` : ""}
-              ${ (state.lastSubmitCorrect || state.showSolution) ? `
-                <div id="explanation" class="explanation-box ${state.lastSubmitCorrect || state.showSolution ? "success-reveal" : ""} ${isSlideMode ? "slide-compact" : ""} ${(showSolutionAfterIncorrect || showSolutionAfterCorrect) ? "show-solution" : ""}">
-                  ${state.lastSubmitCorrect ? `
-                    <div class="status-title">${state.feedback}</div>
-                  ` : ""}
-                  ${isSlideMode ? ((showSolutionAfterIncorrect || showSolutionAfterCorrect) ? `
-                    <div class="slide-explanation-text open">
-                      ${explanationHtml}
-                    </div>
-                  ` : `
-                    <div class="slide-explanation-text ${slideOpen ? "open" : ""}">
-                      ${explanationHtml}
-                    </div>
-                    <button class="slide-explanation-toggle" data-step="${state.currentStep}">
-                      ${slideOpen ? "Hide explanation" : "Show explanation"}
-                    </button>
-                  `) : explanationHtml}
-                  ${ (state.lastSubmitCorrect || state.showSolution) ? `
-                    <button id="nextPartBtn" class="next-part-btn">Continue to Part 2 →</button>
-                  ` : ""}
-                </div>
-              ` : ''}
-          ` : (state.currentStep === 2 ? `
-            <div class="question-body">
-              <div class="question-label">Question 2</div>
-              <div class="task-instructions">Drag & Drop the boxes below to state the <b>mapping rule</b> from f(x) to g(x).</div>
-
-              <div class="rule-card">
-              <div class="mapping-line">
-                <span class="rule-prefix">All points</span>
-                <div class="math-expression">
-                  <span class="rule-math">(</span>${renderMathVar("x")}<span class="rule-math">,</span> ${renderMathVar("y")}<span class="rule-math">)</span>
-                  <span class="rule-arrow">&rarr;</span>
-                  <span class="rule-math">(</span>
-
-                  <div class="drop-stack">
-                    <div class="drop-label">NEW X</div>
-                    <div class="drop-zone ${part2Answer.x ? "filled" : ""} ${part2SlotCorrect.x ? "correct" : ""} ${part2Invalid.x ? "invalid shake" : ""}" data-slot="x" tabindex="0" role="button" aria-label="new x drop zone">
-                      ${part2Answer.x ? `
-                        <span class="drop-value">${renderMathVar(part2Answer.x)}</span>
-                        <button class="drop-clear" data-slot="x" aria-label="Clear new x">&times;</button>
-                      ` : `<span class="drop-placeholder">drop</span>`}
-                    </div>
-                  </div>
-
-                  <span class="rule-sep">,</span>
-
-                  <div class="drop-stack">
-                    <div class="drop-label">NEW Y</div>
-                    <div class="drop-zone ${part2Answer.y ? "filled" : ""} ${part2SlotCorrect.y ? "correct" : ""} ${part2Invalid.y ? "invalid shake" : ""}" data-slot="y" tabindex="0" role="button" aria-label="new y drop zone">
-                      ${part2Answer.y ? `
-                        <span class="drop-value">${renderMathVar(part2Answer.y)}</span>
-                        <button class="drop-clear" data-slot="y" aria-label="Clear new y">&times;</button>
-                      ` : `<span class="drop-placeholder">drop</span>`}
-                    </div>
-                  </div>
-
-                  <span class="rule-math">)</span>
-                </div>
-              </div>
-
-              ${part2Submitted && !part2Correct ? `
-                <div class="rule-hint">Check how the y-values change.</div>
-              ` : ""}
-              </div>
-
-              ${(part2Submitted && (part2Correct || state.part2ShowSolution)) ? "" : `
-              <div class="token-bank">
-              <div class="token-group">
-                <div class="token-label">X-values</div>
-                <div class="token-row">
-                  ${part2Tokens.filter(t => t.group === "x").map(t => `
-                    <div class="drag-token ${state.part2SelectedToken === t.value ? "selected" : ""}" data-value="${t.value}" tabindex="0" role="button" aria-pressed="${state.part2SelectedToken === t.value}" draggable="true">${t.html}</div>
-                  `).join("")}
-                </div>
-              </div>
-
-              <div class="token-group">
-                <div class="token-label">Y-values</div>
-                <div class="token-row">
-                  ${part2Tokens.filter(t => t.group === "y").map(t => `
-                    <div class="drag-token ${state.part2SelectedToken === t.value ? "selected" : ""}" data-value="${t.value}" tabindex="0" role="button" aria-pressed="${state.part2SelectedToken === t.value}" draggable="true">${t.html}</div>
-                  `).join("")}
-                </div>
-              </div>
-            </div>
-              `}
-            </div>
-
-            <div class="feedback-area">
-              ${part2Submitted ? `
-                ${part2Correct ? `
-                  ${state.part2ShowSolution ? `
-                    <div class="explanation-box success-reveal solution-explanation ${isSlideMode ? "slide-compact" : ""}">
-                      The mapping rule is <span class="rule-math">(</span>${renderMathVar("x")}<span class="rule-math">,</span> ${renderMathVar("y")}<span class="rule-math">) &rarr; (</span>${renderMathVar("x")}<span class="rule-math">,</span> ${renderMathVar(`${minusSign}y`)}<span class="rule-math">)</span>.
-                      <button id="nextPartBtn" class="next-part-btn">Continue to Part 3 →</button>
-                    </div>
-                  ` : `
-                    <div class="status-card success-reveal status-success ${isSlideMode ? "slide-compact" : ""}">
-                      <div class="status-title">Correct — nice work!</div>
-                      <div class="status-text">Notice how each y-coordinate is replaced by its opposite value.</div>
-                      <button id="nextPartBtn" class="next-part-btn">Continue to Part 3 →</button>
-                    </div>
-                  `}
-                ` : `
-                  <div class="status-card success-reveal status-error ${isSlideMode ? "slide-compact" : ""}">
-                    <div class="status-title">Not Correct — try again or click "See Solution".</div>
-                  </div>
-                `}
-              ` : ""}
-            </div>
-          ` : (state.currentStep === 3 ? `
-            <div class="q3-panel">
-              <div class="question-body">
-                <div class="question-label">Question 3</div>
-                <div class="task-instructions"><strong>Drag &amp; drop</strong> to complete each statement.</div>
-
-                <div class="rule-card">
-              <div class="mapping-line">
-                <span class="rule-prefix">The points on both graphs are</span>
-                <div class="math-expression">
-                  <div class="drop-zone point-slot ${part3Answer.p1 ? "filled" : ""} ${part3SlotCorrect.p1 ? "correct" : ""} ${part3Invalid.p1 ? "invalid shake" : ""}" data-slot="p1" data-accept="point" tabindex="0" role="button" aria-label="first point drop zone">
-                    ${part3Answer.p1 ? `
-                      <span class="drop-value">${part3PointHtml.get(part3Answer.p1) ?? ""}</span>
-                      <button class="drop-clear" data-slot="p1" aria-label="Clear first point">&times;</button>
-                    ` : `<span class="drop-placeholder">drop</span>`}
-                  </div>
-                  <span class="rule-sep">and</span>
-                  <div class="drop-zone point-slot ${part3Answer.p2 ? "filled" : ""} ${part3SlotCorrect.p2 ? "correct" : ""} ${part3Invalid.p2 ? "invalid shake" : ""}" data-slot="p2" data-accept="point" tabindex="0" role="button" aria-label="second point drop zone">
-                    ${part3Answer.p2 ? `
-                      <span class="drop-value">${part3PointHtml.get(part3Answer.p2) ?? ""}</span>
-                      <button class="drop-clear" data-slot="p2" aria-label="Clear second point">&times;</button>
-                    ` : `<span class="drop-placeholder">drop</span>`}
-                  </div>
-                  <span class="rule-math">.</span>
-                </div>
-              </div>
-
-              <div class="mapping-line">
-                <span class="rule-prefix">They have the same</span>
-                <div class="math-expression">
-                  <div class="drop-zone coord-slot ${part3Answer.coordType ? "filled" : ""} ${part3SlotCorrect.coordType ? "correct" : ""} ${part3Invalid.coordType ? "invalid shake" : ""}" data-slot="coordType" data-accept="coordType" tabindex="0" role="button" aria-label="coordinate type drop zone">
-                    ${part3Answer.coordType ? `
-                      <span class="drop-value">${part3Answer.coordType}</span>
-                      <button class="drop-clear" data-slot="coordType" aria-label="Clear coordinate type">&times;</button>
-                    ` : `<span class="drop-placeholder">drop</span>`}
-                  </div>
-                  <span class="rule-sep">,</span>
-                  <span class="rule-prefix">which is</span>
-                  <div class="drop-zone value-slot ${part3Answer.value ? "filled" : ""} ${part3SlotCorrect.value ? "correct" : ""} ${part3Invalid.value ? "invalid shake" : ""}" data-slot="value" data-accept="value" tabindex="0" role="button" aria-label="value drop zone">
-                    ${part3Answer.value ? `
-                      <span class="drop-value">${renderMathNum(part3Answer.value)}</span>
-                      <button class="drop-clear" data-slot="value" aria-label="Clear value">&times;</button>
-                    ` : `<span class="drop-placeholder">drop</span>`}
-                  </div>
-                  <span class="rule-math">.</span>
-                </div>
-              </div>
-                </div>
-
-                <div class="banks-scroll">
-                  <div class="token-bank">
-                    <div class="token-group">
-                      <div class="token-label">Points:</div>
-                      <div class="token-row points-grid">
-                        ${part3PointTiles.map(t => `
-                          <div class="drag-token ${state.part3SelectedToken?.value === t.value ? "selected" : ""}" data-type="${t.type}" data-value="${t.value}" tabindex="0" role="button" aria-pressed="${state.part3SelectedToken?.value === t.value}" draggable="true">${t.html}</div>
-                        `).join("")}
-                      </div>
-                    </div>
-
-                    <div class="token-group">
-                      <div class="token-label">Type:</div>
-                      <div class="token-row">
-                        ${part3CoordTiles.map(t => `
-                          <div class="drag-token ${state.part3SelectedToken?.value === t.value ? "selected" : ""}" data-type="${t.type}" data-value="${t.value}" tabindex="0" role="button" aria-pressed="${state.part3SelectedToken?.value === t.value}" draggable="true">${t.html}</div>
-                        `).join("")}
-                      </div>
-                    </div>
-
-                    <div class="token-group">
-                      <div class="token-label">Value:</div>
-                      <div class="token-row">
-                        ${part3ValueTiles.map(t => `
-                          <div class="drag-token ${state.part3SelectedToken?.value === t.value ? "selected" : ""}" data-type="${t.type}" data-value="${t.value}" tabindex="0" role="button" aria-pressed="${state.part3SelectedToken?.value === t.value}" draggable="true">${t.html}</div>
-                        `).join("")}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-            <div class="feedback-area">
-              ${part3Submitted ? `
-              ${part3Correct ? `
-                ${isSlideMode ? "" : part3SuccessBlock}
-              ` : `
-                <div class="status-card success-reveal status-error">
-                  <div class="status-title">Not Correct — try again or click "See Solution".</div>
-                </div>
-              `}
-              ` : ""}
-            </div>
-          ` : `
-            <div class="question-label">All done</div>
-            <div class="task-instructions">You have completed this exploration.</div>
-          `))}
-        </section>
+          <div class="page-heading">
+            ${stepIdx === 0 ? `<div class="heading-label">${appletConfig.progressLabel ?? ""}</div>` : ""}
+            <div class="heading-title">${appletConfig.heading ?? ""}</div>
+          </div>
+          <section style="margin-bottom:18px;padding-top:8px;">
+            ${stepPanelHtml}
+          </section>
         </div>
 
         <div class="graph-column">
-
-        <div class="graph-toolbar">
-          <div class="controls">
-            <button id="undoBtn">Undo</button>
-            <button id="resetBtn">Reset</button>
-            <button id="submitBtn" class="submit-btn" ${((state.currentStep === 2 && !part2Ready) || (state.currentStep === 3 && !part3Ready)) ? "disabled" : ""}>Submit</button>
-            ${((state.currentStep === 1 && !state.showSolution && state.lastSubmitCorrect === false) || (state.currentStep === 2 && part2Submitted && !part2Correct) || (state.currentStep === 3 && part3Submitted && !part3Correct)) ? `<button id="solutionBtn">See Solution</button><button id="tryAgainBtn" style="margin-left:6px;">Try Again</button>` : ""}
+          ${toolbarHtml}
+          <div class="graph-frame">
+            ${svgHtml}
+            <div class="graph-label">${graphLabels.original ?? "y = f(x)"}</div>
+            ${showTransLabel ? `<div class="solution-label">${graphLabels.transformed ?? "y = g(x)"}</div>` : ""}
           </div>
         </div>
 
-        <div class="graph-frame">
-          ${svg}
-          <div class="graph-label">y = f(x)</div>
-          ${ (state.showSolution || state.lastSubmitCorrect || showPersistedGraph) ? `<div class="solution-label">y = g(x)</div>` : '' }
-        </div>
-
-        ${isSlideMode && state.currentStep === 3 && part3Resolved ? `
-          <div class="graph-completion slide-q3-completion">
-            ${part3SuccessBlock}
-          </div>
-        ` : ""}
-
-        </div>
       </div>
     </div>
   `;
 
   const wrappedHtml = wrapLegacy
-    ? `
-      <div class="slide-scale-root">
-        <div class="slide-scale-inner">
-          <div class="slide-viewport">
-            <div class="slide-safe-area">
-              ${legacyContentHtml}
-            </div>
-          </div>
-        </div>
-      </div>
-    `
-    : legacyContentHtml;
+    ? `<div class="slide-scale-root"><div class="slide-scale-inner"><div class="slide-viewport"><div class="slide-safe-area">${contentHtml}</div></div></div></div>`
+    : contentHtml;
 
   renderTarget.innerHTML = wrappedHtml;
   window.dispatchEvent(new Event("applet:rendered"));
 
-  
+  attachHandlers(step, stepState, state, applet, steps);
+}
+
+// ─── Event handler attachment ─────────────────────────────────────────────────
+
+function attachHandlers(step, stepState, state, applet, steps) {
+  const renderFn = () => render(state);
 
   // Undo
   document.getElementById("undoBtn")?.addEventListener("click", () => {
-    if (state.currentStep === 2) {
-      if (state.part2Answer?.y) {
-        state.part2Answer = { ...state.part2Answer, y: null };
-      } else if (state.part2Answer?.x) {
-        state.part2Answer = { ...state.part2Answer, x: null };
-      }
-      state.part2SelectedToken = null;
-      state.part2Submitted = false;
-      state.part2Correct = null;
-      state.part2ShowSolution = false;
-      state.part2Feedback = "";
-      render(state);
-    } else if (state.currentStep === 3) {
-      const prev = state.part3History.pop();
-      if (prev) {
-        state.part3Answer = prev;
-      }
-      state.part3SelectedToken = null;
-      state.part3Submitted = false;
-      state.part3Correct = null;
-      state.part3ShowSolution = false;
-      state.part3Feedback = "";
-      render(state);
-    } else {
+    if (step.type === "table-input") return; // cells are edited directly; no undo stack
+    if (step.type === "graph-plot") {
       state.undo();
-      render(state);
-    }
-  });
-
-  // Reset
-  document.getElementById("resetBtn")?.addEventListener("click", () => {
-    if (state.currentStep === 2) {
-      state.part2Answer = { x: null, y: null };
-      state.part2SelectedToken = null;
-      state.part2Submitted = false;
-      state.part2Correct = null;
-      state.part2ShowSolution = false;
-      state.part2Feedback = "";
-      render(state);
-    } else if (state.currentStep === 3) {
-      state.part3Answer = { p1: null, p2: null, coordType: null, value: null };
-      state.part3SelectedToken = null;
-      state.part3History = [];
-      state.part3Submitted = false;
-      state.part3Correct = null;
-      state.part3ShowSolution = false;
-      state.part3Feedback = "";
-      render(state);
     } else {
-      state.reset();
-      render(state);
+      const prev = stepState.history?.pop();
+      if (prev) stepState.answers = prev;
+      stepState.selectedToken = null;
+      stepState.submitted     = false;
+      stepState.correct       = null;
     }
+    renderFn();
   });
 
-  // Try Again (explicit retry) - clears student attempts but keeps config
-  document.getElementById("tryAgainBtn")?.addEventListener("click", () => {
-    if (state.currentStep === 2) {
-      state.part2Answer = { x: null, y: null };
-      state.part2SelectedToken = null;
-      state.part2Submitted = false;
-      state.part2Correct = null;
-      state.part2ShowSolution = false;
-      state.part2Feedback = "";
-      render(state);
-    } else if (state.currentStep === 3) {
-      state.part3Answer = { p1: null, p2: null, coordType: null, value: null };
-      state.part3SelectedToken = null;
-      state.part3History = [];
-      state.part3Submitted = false;
-      state.part3Correct = null;
-      state.part3ShowSolution = false;
-      state.part3Feedback = "";
-      render(state);
+  // Reset + Try Again share the same logic
+  const doReset = () => {
+    if (step.type === "table-input") {
+      stepState.cellValues  = {};
+      stepState.cellCorrect = {};
+      stepState.allCorrect  = false;
+      stepState.graphed     = false;
+      stepState.submitted   = false;
+      stepState.correct     = null;
+      stepState.feedback    = "";
+    } else if (step.type === "graph-plot") {
+      state.reset();
+      stepState.submitted    = false;
+      stepState.correct      = null;
+      stepState.showSolution = false;
+      stepState.feedback     = "";
     } else {
-      state.reset();
-      render(state);
+      stepState.answers       = {};
+      stepState.selectedToken = null;
+      stepState.history       = [];
+      stepState.submitted     = false;
+      stepState.correct       = null;
+      stepState.showSolution  = false;
     }
-  });
+    renderFn();
+  };
+  document.getElementById("resetBtn")?.addEventListener("click",    doReset);
+  document.getElementById("tryAgainBtn")?.addEventListener("click", doReset);
 
-  // Submit (semantic correctness)
+  // Submit
   document.getElementById("submitBtn")?.addEventListener("click", () => {
-    if (state.currentStep === 2) {
-      if (!state.part2Answer?.x || !state.part2Answer?.y) return;
-      const isCorrect = state.part2Answer?.x === "x" && state.part2Answer?.y === "\u2212y";
-      state.part2Submitted = true;
-      state.part2Correct = isCorrect;
-      state.part2ShowSolution = false;
-      state.part2Feedback = isCorrect
-        ? "Correct — nice work!"
-        : "Not Correct — try again or click \"See Solution\".";
-      render(state);
-      if (state.currentStep !== 2) {
-        setTimeout(() => {
-          const target = document.querySelector(isCorrect ? "#nextPartBtn" : ".status-card");
-          if (target) {
-            target.scrollIntoView({ behavior: "smooth", block: "center" });
-          }
-        }, 0);
-      }
-      return;
-    }
-
-    if (state.currentStep === 3) {
-      if (!state.part3Answer?.p1 || !state.part3Answer?.p2 || !state.part3Answer?.coordType || !state.part3Answer?.value) return;
-      const expectedSet = new Set(part3ExpectedKeys);
-      const isCorrect =
-        expectedSet.has(state.part3Answer.p1) &&
-        expectedSet.has(state.part3Answer.p2) &&
-        state.part3Answer.p1 !== state.part3Answer.p2 &&
-        state.part3Answer.coordType === "y-coordinate" &&
-        state.part3Answer.value === "0";
-      state.part3Submitted = true;
-      state.part3Correct = isCorrect;
-      state.part3ShowSolution = false;
-      state.part3Feedback = isCorrect
-        ? "Correct — nice work!"
-        : "Not Correct — try again or click \"See Solution\".";
-      render(state);
+    if (step.type === "table-input") {
+      if (!stepState.allCorrect) return;
+      stepState.submitted = true;
+      stepState.correct   = true;
+      stepState.graphed   = true;
+      stepState.feedback  = step.successMessage ?? "CORRECT!";
+      renderFn();
       setTimeout(() => {
-        const target = document.querySelector(isCorrect ? "#nextPartBtn" : ".status-card");
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
+        document.getElementById("nextPartBtn")?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 0);
       return;
     }
 
-    const activityType = state.config?.activityType ?? "transformations";
-    const result = validate(activityType, state, state.config);
-
-    state.submitted = true;
-    state.lastSubmitCorrect = Boolean(result?.isCorrect);
-    // If correct, use the fixed celebratory message; otherwise use validator message or empty.
-    if (state.lastSubmitCorrect) {
-      state.feedback = "CORRECT - Your graph is bang on!";
-      const snapshot = expectedPoints.map(p => [p[0], p[1]]);
-      state.persistedGraphPoints = snapshot;
-      state.persistedReferenceGraph = snapshot.map(p => [p[0], p[1]]);
-    } else {
-      state.feedback = '<strong>Not Correct</strong> - Click "Try Again" or "See Solution".';
-    }
-
-    if (!state.lastSubmitCorrect) {
-      state.showSolution = config.feedback.showExpectedPointsOnFail;
-    }
-
-    render(state);
-
-    if (!state.lastSubmitCorrect) {
-      if (state.currentStep !== 1) {
-        setTimeout(() => {
-          const feedbackEl = document.getElementById("feedback");
-          if (feedbackEl) {
-            feedbackEl.scrollIntoView({ behavior: "smooth", block: "center" });
-          }
-        }, 0);
+    if (step.type === "graph-plot") {
+      const activityType = state.config?.activityType ?? "transformations";
+      const result       = validate(activityType, state, state.config);
+      stepState.submitted     = true;
+      stepState.correct       = Boolean(result?.isCorrect);
+      state.lastSubmitCorrect = stepState.correct;
+      if (stepState.correct) {
+        stepState.feedback    = step.successMessage ?? "CORRECT!";
+        applet.persistedGraph = state.expectedPoints.map(p => [p[0], p[1]]);
+      } else {
+        stepState.feedback = `<strong>Not Correct</strong> \u2014 Click \u201CTry Again\u201D or \u201CSee Solution\u201D.`;
+        if (state.config.feedback?.showExpectedPointsOnFail) state.showSolution = true;
       }
-    } else {
-      setTimeout(() => {
-        const nextBtn = document.getElementById("nextPartBtn");
-        if (nextBtn) {
-          nextBtn.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }, 0);
+      renderFn();
+      return;
     }
+
+    if (!allSlotsFilled(step, stepState)) return;
+    stepState.submitted = true;
+    stepState.correct   = validateDragDropAnswers(step, stepState, state.config, state.activity);
+    renderFn();
+    setTimeout(() => {
+      const target = document.querySelector(stepState.correct ? "#nextPartBtn" : ".status-card");
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 0);
   });
 
-  // Solution button
+  // See Solution
   document.getElementById("solutionBtn")?.addEventListener("click", () => {
-    if (state.currentStep === 2) {
-      state.part2Answer = { x: "x", y: "\u2212y" };
-      state.part2Submitted = true;
-      state.part2Correct = true;
-      state.part2ShowSolution = true;
-      state.part2Feedback = "Correct — nice work!";
-      render(state);
-      return;
-    }
-
-    if (state.currentStep === 3) {
-      state.part3Answer = {
-        p1: part3ExpectedKeys[0] ?? null,
-        p2: part3ExpectedKeys[1] ?? null,
-        coordType: "y-coordinate",
-        value: "0"
-      };
-      state.part3History = [];
-      state.part3Submitted = true;
-      state.part3Correct = true;
-      state.part3ShowSolution = true;
-      state.part3Feedback = "Correct — nice work!";
-      render(state);
-      return;
-    }
-
-    state.enableSolution();
-    render(state);
-    if (state.currentStep !== 1) {
-      setTimeout(() => {
-        const nextBtn = document.getElementById("nextPartBtn");
-        if (nextBtn) {
-          nextBtn.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }, 0);
-    }
-  });
-
-  document.getElementById("nextPartBtn")?.addEventListener("click", () => {
-    if (state.currentStep === 1) {
-      if (!state.persistedReferenceGraph) {
-        const snapshot = expectedPoints.map(p => [p[0], p[1]]);
-        state.persistedGraphPoints = snapshot;
-        state.persistedReferenceGraph = snapshot.map(p => [p[0], p[1]]);
+    if (step.type === "graph-plot") {
+      state.enableSolution();
+      stepState.showSolution = true;
+      stepState.correct      = true;
+      if (!applet.persistedGraph) {
+        applet.persistedGraph = state.expectedPoints.map(p => [p[0], p[1]]);
       }
-      state.currentStep = 2;
-      state.studentPoints = [];
-      state.orderedStudentPoints = [];
-      state.submitted = false;
-      state.lastSubmitCorrect = null;
-      state.feedback = "";
-      state.showSolution = false;
-      state.part2Answer = { x: null, y: null };
-      state.part2SelectedToken = null;
-      state.part2Submitted = false;
-      state.part2Correct = null;
-      state.part2ShowSolution = false;
-      state.part2Feedback = "";
-      state.slideExplanationOpen = { ...state.slideExplanationOpen, 2: false };
-      render(state);
-      return;
+    } else {
+      stepState.answers      = resolveSolutionAnswers(step, state.config, state.activity);
+      stepState.submitted    = true;
+      stepState.correct      = true;
+      stepState.showSolution = true;
     }
-
-    if (state.currentStep === 2) {
-      state.currentStep = 3;
-      state.part3Answer = { p1: null, p2: null, coordType: null, value: null };
-      state.part3SelectedToken = null;
-      state.part3History = [];
-      state.part3Submitted = false;
-      state.part3Correct = null;
-      state.part3ShowSolution = false;
-      state.part3Feedback = "";
-      state.slideExplanationOpen = { ...state.slideExplanationOpen, 3: false };
-      render(state);
-      return;
-    }
-
-    if (state.currentStep === 3) {
-      state.currentStep = 4;
-      state.slideExplanationOpen = { ...state.slideExplanationOpen, 4: false };
-      render(state);
-    }
+    renderFn();
+    setTimeout(() => {
+      document.getElementById("nextPartBtn")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 0);
   });
 
+  // Next Part
+  document.getElementById("nextPartBtn")?.addEventListener("click", () => {
+    if (step.type === "graph-plot" && !applet.persistedGraph) {
+      applet.persistedGraph = state.expectedPoints.map(p => [p[0], p[1]]);
+    }
+    if (step.type === "graph-plot") {
+      state.studentPoints        = [];
+      state.orderedStudentPoints = [];
+      state.submitted            = false;
+      state.lastSubmitCorrect    = null;
+      state.feedback             = "";
+      state.showSolution         = false;
+    }
+    applet.currentStep = Math.min(applet.currentStep + 1, steps.length - 1);
+    const nextStep = steps[applet.currentStep];
+    if (nextStep) applet.explanationOpen = { ...applet.explanationOpen, [nextStep.id]: false };
+    renderFn();
+  });
+
+  // Slide explanation toggle
   document.querySelectorAll(".slide-explanation-toggle").forEach(btn => {
     btn.addEventListener("click", () => {
-      const step = Number(btn.dataset.step);
-      state.slideExplanationOpen = {
-        ...state.slideExplanationOpen,
-        [step]: !state.slideExplanationOpen?.[step]
-      };
-      render(state);
+      const sid = btn.dataset.stepId;
+      applet.explanationOpen = { ...applet.explanationOpen, [sid]: !applet.explanationOpen?.[sid] };
+      renderFn();
     });
   });
 
-  if (state.currentStep === 2) {
-    const setPart2Slot = (slot, value) => {
-      state.part2Answer = { ...state.part2Answer, [slot]: value };
-      state.part2SelectedToken = null;
-      state.part2Submitted = false;
-      state.part2Correct = null;
-      state.part2ShowSolution = false;
-      state.part2Feedback = "";
-      render(state);
-    };
-
-    document.querySelectorAll(".drag-token").forEach(token => {
-      token.addEventListener("dragstart", (e) => {
-        token.classList.add("dragging");
-        e.dataTransfer?.setData("text/plain", token.dataset.value || "");
-      });
-
-      token.addEventListener("dragend", () => {
-        token.classList.remove("dragging");
-      });
-
-      token.addEventListener("click", () => {
-        state.part2SelectedToken = token.dataset.value || null;
-        render(state);
-      });
-
-      token.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          state.part2SelectedToken = token.dataset.value || null;
-          render(state);
-        }
-      });
-    });
-
-    document.querySelectorAll(".drop-zone").forEach(zone => {
-      zone.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        zone.classList.add("drag-over");
-      });
-
-      zone.addEventListener("dragleave", () => {
-        zone.classList.remove("drag-over");
-      });
-
-      zone.addEventListener("drop", (e) => {
-        e.preventDefault();
-        zone.classList.remove("drag-over");
-        const value = e.dataTransfer?.getData("text/plain");
-        if (value) {
-          setPart2Slot(zone.dataset.slot, value);
-          setTimeout(() => {
-            const refreshed = document.querySelector(`.drop-zone[data-slot="${zone.dataset.slot}"]`);
-            if (refreshed) {
-              refreshed.classList.add("drop-success");
-              setTimeout(() => refreshed.classList.remove("drop-success"), 180);
-            }
-          }, 0);
-        }
-      });
-
-      zone.addEventListener("click", () => {
-        if (state.part2SelectedToken) {
-          setPart2Slot(zone.dataset.slot, state.part2SelectedToken);
-          setTimeout(() => {
-            const refreshed = document.querySelector(`.drop-zone[data-slot="${zone.dataset.slot}"]`);
-            if (refreshed) {
-              refreshed.classList.add("drop-success");
-              setTimeout(() => refreshed.classList.remove("drop-success"), 180);
-            }
-          }, 0);
-        }
-      });
-
-      zone.addEventListener("keydown", (e) => {
-        if ((e.key === "Enter" || e.key === " ") && state.part2SelectedToken) {
-          e.preventDefault();
-          setPart2Slot(zone.dataset.slot, state.part2SelectedToken);
-          setTimeout(() => {
-            const refreshed = document.querySelector(`.drop-zone[data-slot="${zone.dataset.slot}"]`);
-            if (refreshed) {
-              refreshed.classList.add("drop-success");
-              setTimeout(() => refreshed.classList.remove("drop-success"), 180);
-            }
-          }, 0);
-        }
-      });
-    });
-
-    document.querySelectorAll(".drop-clear").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const slot = btn.dataset.slot;
-        if (slot) {
-          setPart2Slot(slot, null);
-        }
-      });
-    });
+  // Drag-drop interaction (shared by mapping + sentences steps)
+  if (step.type === "drag-drop-mapping" || step.type === "drag-drop-sentences") {
+    attachDragDropHandlers(stepState, renderFn);
   }
 
-  if (state.currentStep === 3) {
-    const setPart3Slot = (slot, value) => {
-      state.part3History.push({ ...state.part3Answer });
-      state.part3Answer = { ...state.part3Answer, [slot]: value };
-      state.part3SelectedToken = null;
-      state.part3Submitted = false;
-      state.part3Correct = null;
-      state.part3ShowSolution = false;
-      state.part3Feedback = "";
-      render(state);
+  // Table-input cell interaction
+  if (step.type === "table-input") {
+    attachTableInputHandlers(step, stepState, renderFn);
+  }
+}
+
+// ─── Generic drag-drop token/zone interaction ─────────────────────────────────
+
+function attachDragDropHandlers(stepState, renderFn) {
+  document.querySelectorAll(".drag-token").forEach(token => {
+    const tokenData = { value: token.dataset.value, group: token.dataset.group };
+
+    token.addEventListener("click", () => {
+      const alreadySelected =
+        stepState.selectedToken?.value === tokenData.value &&
+        stepState.selectedToken?.group === tokenData.group;
+      stepState.selectedToken = alreadySelected ? null : { ...tokenData };
+      renderFn();
+    });
+
+    token.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); token.click(); }
+    });
+
+    token.addEventListener("dragstart", e => {
+      token.classList.add("dragging");
+      e.dataTransfer?.setData("text/plain", JSON.stringify(tokenData));
+    });
+    token.addEventListener("dragend", () => token.classList.remove("dragging"));
+  });
+
+  document.querySelectorAll(".drop-zone[data-slot]").forEach(zone => {
+    const placeToken = tokenData => {
+      const zoneGroup = zone.dataset.group;
+      if (zoneGroup && tokenData.group !== zoneGroup) return;
+      stepState.history.push({ ...stepState.answers });
+      stepState.answers[zone.dataset.slot] = tokenData.value;
+      stepState.selectedToken = null;
+      stepState.submitted     = false;
+      stepState.correct       = null;
+      renderFn();
     };
 
-    document.querySelectorAll(".drag-token").forEach(token => {
-      token.addEventListener("dragstart", (e) => {
-        token.classList.add("dragging");
-        e.dataTransfer?.setData("text/plain", token.dataset.value || "");
-        e.dataTransfer?.setData("text/type", token.dataset.type || "");
-      });
-
-      token.addEventListener("dragend", () => {
-        token.classList.remove("dragging");
-      });
-
-      token.addEventListener("click", () => {
-        state.part3SelectedToken = { type: token.dataset.type, value: token.dataset.value };
-        render(state);
-      });
-
-      token.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          state.part3SelectedToken = { type: token.dataset.type, value: token.dataset.value };
-          render(state);
-        }
-      });
+    zone.addEventListener("click", () => {
+      if (stepState.selectedToken) placeToken(stepState.selectedToken);
     });
-
-    document.querySelectorAll(".drop-zone").forEach(zone => {
-      zone.addEventListener("dragover", (e) => {
+    zone.addEventListener("keydown", e => {
+      if ((e.key === "Enter" || e.key === " ") && stepState.selectedToken) {
         e.preventDefault();
-        zone.classList.add("drag-over");
-      });
-
-      zone.addEventListener("dragleave", () => {
-        zone.classList.remove("drag-over");
-      });
-
-      zone.addEventListener("drop", (e) => {
-        e.preventDefault();
-        zone.classList.remove("drag-over");
-        const value = e.dataTransfer?.getData("text/plain");
-        const type = e.dataTransfer?.getData("text/type");
-        const accept = zone.dataset.accept;
-        if (value && type && accept === type) {
-          setPart3Slot(zone.dataset.slot, value);
-          setTimeout(() => {
-            const refreshed = document.querySelector(`.drop-zone[data-slot="${zone.dataset.slot}"]`);
-            if (refreshed) {
-              refreshed.classList.add("drop-success");
-              setTimeout(() => refreshed.classList.remove("drop-success"), 180);
-            }
-          }, 0);
-        }
-      });
-
-      zone.addEventListener("click", () => {
-        if (state.part3SelectedToken) {
-          const { type, value } = state.part3SelectedToken;
-          const accept = zone.dataset.accept;
-          if (accept === type) {
-            setPart3Slot(zone.dataset.slot, value);
-            setTimeout(() => {
-              const refreshed = document.querySelector(`.drop-zone[data-slot="${zone.dataset.slot}"]`);
-              if (refreshed) {
-                refreshed.classList.add("drop-success");
-                setTimeout(() => refreshed.classList.remove("drop-success"), 180);
-              }
-            }, 0);
-          }
-        }
-      });
-
-      zone.addEventListener("keydown", (e) => {
-        if ((e.key === "Enter" || e.key === " ") && state.part3SelectedToken) {
-          e.preventDefault();
-          const { type, value } = state.part3SelectedToken;
-          const accept = zone.dataset.accept;
-          if (accept === type) {
-            setPart3Slot(zone.dataset.slot, value);
-            setTimeout(() => {
-              const refreshed = document.querySelector(`.drop-zone[data-slot="${zone.dataset.slot}"]`);
-              if (refreshed) {
-                refreshed.classList.add("drop-success");
-                setTimeout(() => refreshed.classList.remove("drop-success"), 180);
-              }
-            }, 0);
-          }
-        }
-      });
-    });
-
-    document.querySelectorAll(".drop-clear").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const slot = btn.dataset.slot;
-        if (slot) {
-          setPart3Slot(slot, null);
-        }
-      });
-    });
-  }
-
-  if (!state._shortcutsBound) {
-    document.addEventListener("keydown", (e) => {
-      const key = e.key.toLowerCase();
-      if (key === "enter") {
-        document.getElementById("submitBtn")?.click();
-      } else if (e.ctrlKey && key === "z") {
-        e.preventDefault();
-        state.undo();
-        render(state);
+        placeToken(stepState.selectedToken);
       }
     });
-    state._shortcutsBound = true;
-  }
+    zone.addEventListener("dragover", e => e.preventDefault());
+    zone.addEventListener("drop", e => {
+      e.preventDefault();
+      try {
+        const data = JSON.parse(e.dataTransfer?.getData("text/plain") ?? "{}");
+        if (data.value) placeToken(data);
+      } catch { /* ignore malformed drag data */ }
+    });
+  });
+
+  document.querySelectorAll(".drop-clear").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const slot = btn.dataset.slot;
+      if (!slot) return;
+      stepState.history.push({ ...stepState.answers });
+      stepState.answers[slot] = null;
+      stepState.selectedToken = null;
+      stepState.submitted     = false;
+      stepState.correct       = null;
+      renderFn();
+    });
+  });
+}
+
+// ─── Table-input cell interaction ─────────────────────────────────────────────
+
+function attachTableInputHandlers(step, stepState, renderFn) {
+  const rows   = step.table?.rows ?? [];
+  const fnExpr = step.table?.fn   ?? "";
+
+  document.querySelectorAll(".tv-input").forEach(input => {
+    // Validate on blur or Enter — avoids re-rendering on every keystroke
+    const validate = () => {
+      const xStr  = input.dataset.x;
+      const raw   = input.value.trim();
+      stepState.cellValues[xStr] = raw;
+
+      if (raw !== "") {
+        const student  = parseFloat(raw);
+        const expected = evaluateTableFn(Number(xStr), fnExpr);
+        stepState.cellCorrect[xStr] =
+          !Number.isNaN(student) &&
+          expected !== null &&
+          Math.abs(student - expected) < 0.001;
+      } else {
+        stepState.cellCorrect[xStr] = false;
+      }
+
+      stepState.allCorrect = rows.every(x =>
+        evaluateTableFn(Number(x), fnExpr) === null || stepState.cellCorrect[String(x)] === true
+      );
+      renderFn();
+    };
+
+    input.addEventListener("blur",    validate);
+    input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } });
+  });
 }

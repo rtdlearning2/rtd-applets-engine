@@ -23,7 +23,7 @@ async function resolveActivity(activity, configSrc) {
 }
 
 export async function loadConfigFromSrc() {
-  const defaultSrc = "/applets/configs/golden.json";
+  const defaultSrc = "/applets/configs/applet-5-reflect-x.json";
   const src = getSrcParam() || defaultSrc;
 
   const res = await fetch(src);
@@ -35,6 +35,10 @@ export async function loadConfigFromSrc() {
   const config = migrateConfig(rawConfig);
 
   await resolveActivity(config?.activity, src);
+  // Also resolve activities declared inside individual pages (e.g. type: "applet")
+  for (const page of config?.pages ?? []) {
+    if (page?.activity?.activityModule) await resolveActivity(page.activity, src);
+  }
   await preloadPageTypes(config?.pages ?? []);
 
   if (Array.isArray(config?.pages)) {

@@ -58,6 +58,14 @@ export function computeExpectedPoints(originalPoints, transform) {
     });
   }
 
+  // Horizontal / vertical scale (stretch or compression)
+  // scale { sx, sy } maps (x, y) → (sx*x, sy*y)
+  if (transform.type === "scale") {
+    const sx = Number(transform.sx ?? 1);
+    const sy = Number(transform.sy ?? 1);
+    return originalPoints.map(([x, y]) => [sx * x, sy * y]);
+  }
+
   // Step 11: dilation with optional pivot
   if (transform.type === "dilate") {
     const factor = Number(transform.k ?? 1);
