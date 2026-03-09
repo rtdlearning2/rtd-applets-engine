@@ -39,8 +39,9 @@ const handlers = {
         y = svgPoint.y;
         const viewBox = svg.viewBox?.baseVal;
         if (viewBox && viewBox.width && viewBox.height) {
-          width  = viewBox.width;
-          height = viewBox.height;
+          // viewBox may include padding (negative origin); use only the grid content size
+          width  = viewBox.width  + 2 * viewBox.x;
+          height = viewBox.height + 2 * viewBox.y;
         }
       }
     }

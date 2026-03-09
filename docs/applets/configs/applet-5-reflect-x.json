@@ -15,63 +15,23 @@
           "contentPadding": "4px"
         }
       },
-      "grid": {
-        "xmin": -6,
-        "xmax": 7,
-        "ymin": -6,
-        "ymax": 6
-      },
-      "interaction": {
-        "mode": "placePoints",
-        "snapStep": 1,
-        "hitRadiusPx": 20
-      },
+      "grid": { "xmin": -6, "xmax": 7, "ymin": -6, "ymax": 6 },
+      "interaction": { "mode": "placePoints", "snapStep": 1, "hitRadiusPx": 20 },
       "original": {
-        "points": [
-          [
-            -5,
-            -3
-          ],
-          [
-            -1,
-            -1
-          ],
-          [
-            0,
-            -1
-          ],
-          [
-            3,
-            2
-          ],
-          [
-            6,
-            -4
-          ]
-        ],
+        "points": [[-5, -3], [-1, -1], [0, -1], [3, 2], [6, -4]],
         "connectLines": true
       },
-      "transform": {
-        "type": "reflect_x"
-      },
+      "transform": { "type": "reflect_x" },
       "activity": {
         "type": "transformations",
         "activityModule": "../activities/transformations.js",
-        "config": {
-          "tolerance": 0,
-          "requireExactCount": true
-        }
+        "config": { "tolerance": 0, "requireExactCount": true }
       },
-      "feedback": {
-        "showExpectedPointsOnFail": false
-      },
+      "feedback": { "showExpectedPointsOnFail": false },
       "applet": {
         "heading": "Reflection in the x-axis",
         "progressLabel": "Exploration 3 of 8",
-        "graphLabels": {
-          "original": "y = f(x)",
-          "transformed": "y = g(x)"
-        },
+        "graphLabels": { "original": "y = f(x)", "transformed": "y = g(x)" },
         "steps": [
           {
             "id": "q1",
@@ -88,49 +48,26 @@
             "questionLabel": "Question 2",
             "instructions": "Drag &amp; Drop the boxes below to state the <b>mapping rule</b> from f(x) to g(x).",
             "slots": [
-              {
-                "id": "x",
-                "label": "NEW X"
-              },
-              {
-                "id": "y",
-                "label": "NEW Y"
-              }
+              { "id": "x", "label": "NEW X" },
+              { "id": "y", "label": "NEW Y" }
             ],
             "tokenBanks": [
               {
-                "label": "X-values",
-                "group": "x",
+                "label": "X-values", "group": "x",
                 "tokens": [
-                  {
-                    "value": "x",
-                    "group": "x"
-                  },
-                  {
-                    "value": "\u2212x",
-                    "group": "x"
-                  }
+                  { "value": "x",      "group": "x" },
+                  { "value": "\u2212x", "group": "x" }
                 ]
               },
               {
-                "label": "Y-values",
-                "group": "y",
+                "label": "Y-values", "group": "y",
                 "tokens": [
-                  {
-                    "value": "y",
-                    "group": "y"
-                  },
-                  {
-                    "value": "\u2212y",
-                    "group": "y"
-                  }
+                  { "value": "y",      "group": "y" },
+                  { "value": "\u2212y", "group": "y" }
                 ]
               }
             ],
-            "correctAnswer": {
-              "x": "x",
-              "y": "\u2212y"
-            },
+            "correctAnswer": { "x": "x", "y": "\u2212y" },
             "hint": "Check how the y-values change.",
             "successText": "Notice how each y-coordinate is replaced by its opposite value.",
             "nextLabel": "Continue to Part 3 \u2192"
@@ -144,78 +81,40 @@
               {
                 "prefix": "The points on both graphs are",
                 "slots": [
-                  {
-                    "id": "p1",
-                    "group": "point"
-                  },
-                  {
-                    "separator": "and"
-                  },
-                  {
-                    "id": "p2",
-                    "group": "point"
-                  }
-                ]
+                  { "id": "p1", "group": "point" },
+                  { "separator": "and" },
+                  { "id": "p2", "group": "point" }
+                ],
+                "suffix": "."
               },
               {
                 "prefix": "They have the same",
                 "slots": [
-                  {
-                    "id": "coordType",
-                    "group": "coordType"
-                  },
-                  {
-                    "separator": ", which is"
-                  },
-                  {
-                    "id": "value",
-                    "group": "value"
-                  }
-                ]
+                  { "id": "coordType", "group": "coordType" },
+                  { "separator": ", which is" },
+                  { "id": "value", "group": "value" }
+                ],
+                "suffix": "."
               }
             ],
             "tokenBanks": [
               {
-                "label": "Points:",
-                "group": "point",
+                "label": "Points:", "group": "point",
                 "source": "computed:invariant-points",
-                "distractors": [
-                  [
-                    0,
-                    -1
-                  ],
-                  [
-                    0,
-                    1
-                  ]
+                "distractors": [[0, -1], [0, 1]]
+              },
+              {
+                "label": "Type:", "group": "coordType",
+                "tokens": [
+                  { "value": "x-coordinate", "group": "coordType" },
+                  { "value": "y-coordinate", "group": "coordType" }
                 ]
               },
               {
-                "label": "Type:",
-                "group": "coordType",
+                "label": "Value:", "group": "value",
                 "tokens": [
-                  {
-                    "value": "x-coordinate",
-                    "group": "coordType"
-                  },
-                  {
-                    "value": "y-coordinate",
-                    "group": "coordType"
-                  }
-                ]
-              },
-              {
-                "label": "Value:",
-                "group": "value",
-                "tokens": [
-                  {
-                    "value": "0",
-                    "group": "value"
-                  },
-                  {
-                    "value": "\u22121",
-                    "group": "value"
-                  }
+                  { "value": "0",        "group": "value" },
+                  { "value": "\u22121",  "group": "value" }
                 ]
               }
             ],

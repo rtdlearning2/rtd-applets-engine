@@ -1,4 +1,4 @@
-import{P as l}from"./pageTypes-s5bfgjb6.js";import{b as o,c as a}from"./index-BZ4EMIlB.js";import{s as u,r as f}from"./pageUi-D8KbPjWU.js";const v={type:l.GRAPH_IDENTIFY,initState:()=>({selected:[],submitted:!1,isCorrect:null,feedback:""}),render:({page:e,pageState:r})=>{const s=Array.isArray(e?.targets)?e.targets:[],t=r?.selected??[],c=s.map((n,d)=>`<button class="target-chip ${t.includes(String(d))?"selected":""}" data-index="${d}">${n}</button>`).join(""),i=f(r);return`
+import{P as l}from"./pageTypes-s5bfgjb6.js";import{b as o,c as a}from"./index-CIyqXupa.js";import{s as u,r as f}from"./pageUi-D8KbPjWU.js";const v={type:l.GRAPH_IDENTIFY,initState:()=>({selected:[],submitted:!1,isCorrect:null,feedback:""}),render:({page:e,pageState:r})=>{const s=Array.isArray(e?.targets)?e.targets:[],t=r?.selected??[],c=s.map((n,d)=>`<button class="target-chip ${t.includes(String(d))?"selected":""}" data-index="${d}">${n}</button>`).join(""),i=f(r);return`
       <div class="page-graph-identify">
         ${o(e)}
         <div class="graph-placeholder">[graph for identification]</div>

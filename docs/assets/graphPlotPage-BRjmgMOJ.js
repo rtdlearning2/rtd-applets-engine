@@ -1,4 +1,4 @@
-import{P as e}from"./pageTypes-s5bfgjb6.js";import{r as a,a as n,b as p}from"./index-BZ4EMIlB.js";const c={type:e.GRAPH_PLOT,initState:()=>({submitted:!1}),render:({page:o})=>`
+import{P as e}from"./pageTypes-s5bfgjb6.js";import{r as a,a as n,b as p}from"./index-CIyqXupa.js";const c={type:e.GRAPH_PLOT,initState:()=>({submitted:!1}),render:({page:o})=>`
       <div class="page-graph-plot">
         ${o?.showPrompt?p(o):""}
         <div class="legacy-graph-root"></div>

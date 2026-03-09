@@ -60,11 +60,23 @@ export const renderPageApp = (state) => {
   window.dispatchEvent(new Event("applet:rendered"));
   const root = container.querySelector(".page-shell");
   renderer.bind?.({ root, state, pageState, page, index, total });
+
+  // Clean up any previous page-complete listener, then wire a new one if there is a next page
+  if (state._pageCompleteHandler) {
+    window.removeEventListener("applet:page-complete", state._pageCompleteHandler);
+    delete state._pageCompleteHandler;
+  }
+
   const onNav = (direction) => {
     const nextIndex = direction === "next" ? index + 1 : index - 1;
     state.currentPageIndex = Math.max(0, Math.min(nextIndex, total - 1));
     renderPageApp(state);
   };
+
+  if (index < total - 1) {
+    state._pageCompleteHandler = () => onNav("next");
+    window.addEventListener("applet:page-complete", state._pageCompleteHandler, { once: true });
+  }
 
   if (showFooter) {
     root?.querySelector("[data-action='prev']")?.addEventListener("click", () => onNav("prev"));

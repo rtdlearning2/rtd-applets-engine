@@ -23,12 +23,23 @@ async function resolveActivity(activity, configSrc) {
 }
 
 export async function loadConfigFromSrc() {
-  const defaultSrc = "/applets/configs/applet-5-reflect-x.json";
+  const defaultSrc = "/applets/configs/applet-4-reflect-x-quadratic.json";
   const src = getSrcParam() || defaultSrc;
 
   const res = await fetch(src);
   if (!res.ok) {
-    throw new Error(`Could not load config (${res.status}) from ${src}`);
+    const err = new Error(`Could not load config (${res.status}) from ${src}`);
+    if (res.status === 404) err.code = "NOT_FOUND";
+    throw err;
+  }
+
+  // If the server returned HTML instead of JSON (e.g. Vite's SPA fallback for a missing file),
+  // treat it as not found rather than letting JSON.parse throw a confusing SyntaxError.
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json") && !contentType.includes("text/plain")) {
+    const err = new Error(`Expected JSON config but server returned ${contentType || "unknown content"} for ${src}`);
+    err.code = "NOT_FOUND";
+    throw err;
   }
 
   const rawConfig = await res.json();

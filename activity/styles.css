@@ -810,7 +810,7 @@ body.slide-mode .graph-column {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .mapping-line + .mapping-line {
@@ -821,7 +821,7 @@ body.slide-mode .graph-column {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  white-space: nowrap;
+  white-space: wrap;
   font-size: 1.16em;
   font-weight: 600;
 }
@@ -833,6 +833,7 @@ body.slide-mode .graph-column {
 .rule-math {
   font-weight: 600;
   user-select: none;
+  font-size: 1rem;
 }
 
 .rule-arrow {

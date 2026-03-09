@@ -141,7 +141,7 @@ function buildSvg(state, width, height) {
       // Curve applets use a Catmull-Rom spline for a smooth preview.
       if (rawStudentPoints.length > 1) {
         const sorted     = [...rawStudentPoints].sort((a, b) => a[0] - b[0]);
-        const lineType   = isCurveApplet ? "smooth-curve" : "polyline";
+        const lineType   = config.interaction?.studentLineStyle ?? (isCurveApplet ? "smooth-curve" : "polyline");
         seriesList.push({ type: lineType, points: sorted.map(toObj), style: { stroke: studentColor, strokeWidth, opacity: 1 } });
       }
       if (rawStudentPoints.length > 0) {
@@ -456,7 +456,12 @@ function attachHandlers(step, stepState, state, applet, steps) {
       state.feedback             = "";
       state.showSolution         = false;
     }
-    applet.currentStep = Math.min(applet.currentStep + 1, steps.length - 1);
+    // Last step — signal the outer page system to advance to the next page
+    if (applet.currentStep >= steps.length - 1) {
+      window.dispatchEvent(new CustomEvent("applet:page-complete"));
+      return;
+    }
+    applet.currentStep += 1;
     const nextStep = steps[applet.currentStep];
     if (nextStep) applet.explanationOpen = { ...applet.explanationOpen, [nextStep.id]: false };
     renderFn();

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1",
-  "title": "Reflect Across the X-Axis",
+  "title": "Reflect Across the Y-Axis (Linear)",
   "pages": [
     {
       "type": "applet",
@@ -17,7 +17,7 @@
       },
       "grid": {
         "xmin": -6,
-        "xmax": 7,
+        "xmax": 6,
         "ymin": -6,
         "ymax": 6
       },
@@ -30,19 +30,19 @@
         "points": [
           [
             -5,
-            -3
+            -4
           ],
           [
-            -1,
-            -1
+            -2,
+            -2
           ],
           [
             0,
-            -1
+            0
           ],
           [
             3,
-            2
+            3
           ],
           [
             6,
@@ -52,7 +52,7 @@
         "connectLines": true
       },
       "transform": {
-        "type": "reflect_x"
+        "type": "reflect_y"
       },
       "activity": {
         "type": "transformations",
@@ -66,27 +66,27 @@
         "showExpectedPointsOnFail": false
       },
       "applet": {
-        "heading": "Reflection in the x-axis",
-        "progressLabel": "Exploration 3 of 8",
+        "heading": "Reflection in the y-axis",
+        "progressLabel": "Exploration 5 of 8",
         "graphLabels": {
           "original": "y = f(x)",
-          "transformed": "y = g(x)"
+          "transformed": "y = h(x)"
         },
         "steps": [
           {
             "id": "q1",
             "type": "graph-plot",
             "questionLabel": "Question 1 (of 3)",
-            "instructions": "Sketch the mirror image graph, <strong>y = g(x)</strong>, by clicking where the 5 connection points should be, and using the above controls.",
+            "instructions": "Sketch the mirror image graph, this time reflected in the <strong>y-axis</strong>. Label the new graph <strong>y = h(x)</strong>.",
             "successMessage": "CORRECT - Your graph is bang on!",
-            "explanation": "<p>Notice how the y-coordinate of all points on the transformed graph g(x) are the <i>negative</i> of the y-coordinate on the f(x).</p><p>This is a <b>vertical reflection</b> about the x-axis.</p>",
-            "nextLabel": "Continue to Part 2 \u2192"
+            "explanation": "<p>Notice how the x-coordinate of all points on the transformed graph h(x) are the <i>negative</i> of the x-coordinate on f(x), while the y-coordinate stays the same.</p><p>This is a <b>horizontal reflection</b> about the y-axis.</p>",
+            "nextLabel": "Continue to Part 2 →"
           },
           {
             "id": "q2",
             "type": "drag-drop-mapping",
             "questionLabel": "Question 2",
-            "instructions": "Drag &amp; Drop the boxes below to state the <b>mapping rule</b> from f(x) to g(x).",
+            "instructions": "State the <b>mapping rule</b> from <strong>y = f(x)</strong> to <strong>y = h(x)</strong>.",
             "slots": [
               {
                 "id": "x",
@@ -107,7 +107,7 @@
                     "group": "x"
                   },
                   {
-                    "value": "\u2212x",
+                    "value": "−x",
                     "group": "x"
                   }
                 ]
@@ -121,44 +121,38 @@
                     "group": "y"
                   },
                   {
-                    "value": "\u2212y",
+                    "value": "−y",
                     "group": "y"
                   }
                 ]
               }
             ],
             "correctAnswer": {
-              "x": "x",
-              "y": "\u2212y"
+              "x": "−x",
+              "y": "y"
             },
-            "hint": "Check how the y-values change.",
-            "successText": "Notice how each y-coordinate is replaced by its opposite value.",
-            "nextLabel": "Continue to Part 3 \u2192"
+            "hint": "Check how the x-values change.",
+            "successText": "Each x-coordinate is replaced by its opposite, while y stays the same.",
+            "nextLabel": "Continue to Part 3 →"
           },
           {
             "id": "q3",
             "type": "drag-drop-sentences",
             "questionLabel": "Question 3",
-            "instructions": "<strong>Drag &amp; drop</strong> to complete each statement.",
+            "instructions": "<strong>Drag &amp; drop</strong> to complete each statement about the invariant point.",
             "sentences": [
               {
-                "prefix": "The points on both graphs are",
+                "prefix": "The point on both graphs is",
                 "slots": [
                   {
                     "id": "p1",
                     "group": "point"
-                  },
-                  {
-                    "separator": "and"
-                  },
-                  {
-                    "id": "p2",
-                    "group": "point"
                   }
-                ]
+                ],
+                "suffix": "."
               },
               {
-                "prefix": "They have the same",
+                "prefix": "It has the same",
                 "slots": [
                   {
                     "id": "coordType",
@@ -171,7 +165,8 @@
                     "id": "value",
                     "group": "value"
                   }
-                ]
+                ],
+                "suffix": "."
               }
             ],
             "tokenBanks": [
@@ -181,12 +176,12 @@
                 "source": "computed:invariant-points",
                 "distractors": [
                   [
-                    0,
-                    -1
+                    -2,
+                    -2
                   ],
                   [
-                    0,
-                    1
+                    3,
+                    3
                   ]
                 ]
               },
@@ -213,7 +208,11 @@
                     "group": "value"
                   },
                   {
-                    "value": "\u22121",
+                    "value": "−2",
+                    "group": "value"
+                  },
+                  {
+                    "value": "3",
                     "group": "value"
                   }
                 ]
@@ -221,12 +220,11 @@
             ],
             "correctAnswer": {
               "p1": "computed:invariant-point",
-              "p2": "computed:invariant-point",
-              "coordType": "y-coordinate",
+              "coordType": "x-coordinate",
               "value": "0"
             },
-            "successText": "A reflection in the x-axis keeps x-values the same and multiplies y-values by \u22121. Points on the x-axis have y = 0, so they do not move under the reflection. Therefore, the shared points are the x-intercepts, and they have the same y-coordinate, which is 0.",
-            "nextLabel": "Finish Exploration \u2192"
+            "successText": "A reflection in the y-axis keeps y-values the same. Points on the y-axis have x = 0, so they share the same x-coordinate, which is 0.",
+            "nextLabel": "Finish Exploration →"
           }
         ]
       }

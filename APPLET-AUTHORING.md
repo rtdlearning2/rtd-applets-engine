@@ -36,6 +36,31 @@ All applets use the `pages` array format:
 
 `showProgress`, `showTitle`, `showFooter` must all be `false` — the applet renders its own heading and toolbar.
 
+### Multi-page applets
+
+A single config file can contain multiple pages in the `pages` array. Each page is completely independent — its own `grid`, `original`, `transform`, `activity`, and `applet.steps`. When the student clicks the **last step's** "Finish / Continue" button, the engine automatically advances to the next page. There is no special wiring needed in the config.
+
+Use multiple pages when one exploration logically covers two different parent functions (e.g. y = x² then y = |x|), where each function needs its own grid bounds and transform.
+
+```json
+{
+  "schemaVersion": "1",
+  "title": "Vertical Translations – y = x² and y = |x|",
+  "pages": [
+    {
+      "type": "applet",
+      ...quadratic config (grid ymin:-2 ymax:14, transform dy:3)...
+    },
+    {
+      "type": "applet",
+      ...absolute value config (grid ymin:-5 ymax:5, transform dy:-2)...
+    }
+  ]
+}
+```
+
+**Important:** the last step's `nextLabel` on page N should say `"Continue to Page 2 \u2192"` (not "Finish Exploration") so students know there's more content. Within-page step navigation uses "Continue to Part N →". Only the last step of the **last page** should say `"Finish Exploration \u2192"`.
+
 ---
 
 ## 3. Applet Page Fields
@@ -53,6 +78,15 @@ Coordinate bounds of the graph. Match the axes shown in the image.
 "interaction": { "mode": "placePoints", "snapStep": 1, "hitRadiusPx": 20 }
 ```
 Always `placePoints` for transformation applets.
+
+| Field | Default | Description |
+|---|---|---|
+| `mode` | — | Always `"placePoints"` for transformation applets |
+| `snapStep` | `1` | Grid snap increment |
+| `hitRadiusPx` | `20` | Click acceptance radius in pixels |
+| `studentLineStyle` | auto | How the student's placed points are connected. `"smooth-curve"` = Catmull-Rom spline (default for curve applets). `"polyline"` = straight lines. **Set to `"polyline"` for piecewise-linear functions like `abs(x)`.** |
+
+When `original.curve` is present, the engine defaults to `smooth-curve` for the student's drawing preview. Override this with `"studentLineStyle": "polyline"` when the target function is V-shaped or otherwise piecewise-linear.
 
 ### `original`
 
@@ -679,6 +713,11 @@ Use this pattern when students must:
 - [ ] Q3 invariant `distractors` are NOT on the axis of reflection
 - [ ] Q3 equation tokens have unique `value` slugs and `html` for display
 
+**Multi-page applets:**
+- [ ] Each page has its own independent `grid`, `original`, `transform`, `activity`, and `applet` block
+- [ ] Last step of every non-final page has `nextLabel` saying "Continue to Page N →" (not "Finish Exploration")
+- [ ] Only the last step of the last page says `"nextLabel": "Finish Exploration \u2192"`
+
 **Quadratic-shift / table-input pattern:**
 - [ ] `table.fn` matches `original.curve.fn` (both use `^` for exponentiation)
 - [ ] `table.rows` lists the x-values students must fill in (subset of `original.points`)
@@ -691,6 +730,7 @@ Use this pattern when students must:
 - [ ] If `table.fn` is undefined at any x (e.g. `1/x` at `x=0`), include that x in `table.rows` — it auto-renders as 💣
 - [ ] Step 3 is `"type": "graph-plot"` — interactive, no `autoReveal`
 - [ ] `explanation` field added to step 3 if image shows a written explanation
+- [ ] If the function is piecewise-linear (e.g. `abs(x)`), add `"studentLineStyle": "polyline"` to the page's `interaction` block
 
 **Drag-drop set-notation:**
 - [ ] Token `html` field uses `\u2208` (∈), `\u211d` (ℝ), `\u2265` (≥)
