@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>RTD Applets Engine</title>
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var mode = params.get("mode");
+        var embedParam = params.get("embed");
+        var embedOn =
+          embedParam === "1" || embedParam === "true" || mode === "slide";
+        var embedOff = embedParam === "0" || embedParam === "false";
+        var inIframe = false;
+        try {
+          inIframe = window.self !== window.top;
+        } catch (e) {
+          inIframe = true;
+        }
+        if (!embedOff && (embedOn || inIframe)) {
+          document.documentElement.classList.add("embed-mode");
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-jMcgm5iu.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D52ZG8_D.css">
+  </head>
+  <body>
+    <main class="wrap">
+      <div id="app" class="card"></div>
+    </main>
+
+  </body>
+</html>
