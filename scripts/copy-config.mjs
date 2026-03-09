@@ -20,7 +20,4 @@ await copyDir(
   path.join(root, "applets", "configs"),
   path.join(dist, "applets", "configs"),
 );
-await copyDir(
-  path.join(root, "applets", "activities"),
-  path.join(dist, "applets", "activities"),
-);
+// Note: applets/activities/*.js are bundled by Vite as entry points (see vite.config.js)

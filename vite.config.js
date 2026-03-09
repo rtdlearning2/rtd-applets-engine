@@ -18,12 +18,37 @@ const CONTENT_TYPES = {
   ".woff2": "font/woff2",
 };
 
+// Bundle activity modules as named entry points so relative imports are resolved
+// at build time. This makes them work from any URL depth (e.g. PR preview subdirs).
+const activityDir = path.join(__dirname, "applets", "activities");
+const activityEntries = fs.existsSync(activityDir)
+  ? Object.fromEntries(
+      fs.readdirSync(activityDir)
+        .filter((f) => f.endsWith(".js"))
+        .map((f) => [
+          `applets/activities/${f.slice(0, -3)}`,
+          path.join(activityDir, f),
+        ])
+    )
+  : {};
+
 export default defineConfig({
   root: "activity",
   base: "./",
   build: {
     outDir: "../docs",
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        index: path.join(__dirname, "activity", "index.html"),
+        ...activityEntries,
+      },
+      preserveEntrySignatures: "exports-only",
+      output: {
+        entryFileNames: "[name].js",
+        chunkFileNames: "assets/[name]-[hash].js",
+      },
+    },
   },
   server: {
     fs: {
