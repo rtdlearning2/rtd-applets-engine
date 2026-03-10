@@ -69,7 +69,7 @@
       },
       "applet": {
         "heading": "Horizontal Reflections",
-        "progressLabel": "Exploration 4 of 8",
+        "progressLabel": "Exploration 4",
         "graphLabels": {
           "original": "y = f(x)",
           "transformed": "y = g(x)"
