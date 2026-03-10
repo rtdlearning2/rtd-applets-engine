@@ -67,7 +67,7 @@
       },
       "applet": {
         "heading": "Reflection in the x-axis",
-        "progressLabel": "Exploration 3 of 8",
+        "progressLabel": "Exploration 2",
         "graphLabels": {
           "original": "y = f(x)",
           "transformed": "y = g(x)"
