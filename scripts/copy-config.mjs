@@ -16,5 +16,8 @@ const copyDir = async (from, to) => {
   }
 };
 
-await copyDir(path.join(root, "engine", "config"), path.join(dist, "engine", "config"));
-await copyDir(path.join(root, "activity", "config"), path.join(dist, "activity", "config"));
+await copyDir(
+  path.join(root, "applets", "configs"),
+  path.join(dist, "applets", "configs"),
+);
+// Note: applets/activities/*.js are bundled by Vite as entry points (see vite.config.js)

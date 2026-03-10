@@ -1,0 +1,251 @@
+{
+  "schemaVersion": "1",
+  "title": "The Rational Function \u2013 The Graph of y = 1/x",
+  "pages": [
+    {
+      "type": "applet",
+      "showProgress": false,
+      "showTitle": false,
+      "showFooter": false,
+      "ui": {
+        "layout": {
+          "preset": "ppt1080p",
+          "overflowPolicy": "scroll",
+          "safePadding": "4px",
+          "contentPadding": "4px"
+        }
+      },
+      "grid": {
+        "xmin": -5,
+        "xmax": 5,
+        "ymin": -5,
+        "ymax": 5
+      },
+      "interaction": {
+        "mode": "placePoints",
+        "snapStep": 1,
+        "hitRadiusPx": 20
+      },
+      "original": {
+        "curve": {
+          "fn": "1/x",
+          "domain": [
+            -5,
+            5
+          ]
+        },
+        "points": [
+          [
+            -5,
+            -0.2
+          ],
+          [
+            -4,
+            -0.25
+          ],
+          [
+            -3,
+            -0.33
+          ],
+          [
+            -2,
+            -0.5
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -0.5,
+            -2
+          ],
+          [
+            -0.33,
+            -3
+          ],
+          [
+            -0.25,
+            -4
+          ],
+          [
+            -0.2,
+            -5
+          ],
+          [
+            0.2,
+            5
+          ],
+          [
+            0.25,
+            4
+          ],
+          [
+            0.33,
+            3
+          ],
+          [
+            0.5,
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            0.5
+          ],
+          [
+            3,
+            0.33
+          ],
+          [
+            4,
+            0.25
+          ],
+          [
+            5,
+            0.2
+          ]
+        ]
+      },
+      "applet": {
+        "heading": "The Rational Function",
+        "graphLabels": {
+          "original": "y = 1/x"
+        },
+        "steps": [
+          {
+            "id": "q1",
+            "type": "table-input",
+            "questionLabel": "Question 1 (of 2)",
+            "instructions": "<strong>Complete</strong> the <strong>table of values</strong> for <strong>y = 1/x</strong>. Points are plotted on the graph as you go.",
+            "table": {
+              "xLabel": "x",
+              "yLabel": "y = 1/x",
+              "fn": "1/x",
+              "rows": [
+                -5,
+                -4,
+                -1,
+                0,
+                0.2,
+                0.25
+              ]
+            },
+            "preFilledRows": {
+              "-5": -0.2,
+              "-4": -0.25
+            },
+            "plotAsEntered": true,
+            "graphButtonLabel": "Graph",
+            "successMessage": "CORRECT \u2014 Table complete and graph plotted!",
+            "nextLabel": "Continue to Part 2 \u2192"
+          },
+          {
+            "id": "q2",
+            "type": "drag-drop-sentences",
+            "questionLabel": "Question 2 (of 2)",
+            "instructions": "<strong>Fill in the blanks</strong> to complete each statement about <strong>y = 1/x</strong>.",
+            "sentences": [
+              {
+                "prefix": "The graph of y = 1/x has a vertical asymptote at",
+                "slots": [
+                  {
+                    "id": "va",
+                    "group": "equation"
+                  },
+                  {
+                    "separator": "and a horizontal asymptote at"
+                  },
+                  {
+                    "id": "ha",
+                    "group": "equation"
+                  }
+                ]
+              },
+              {
+                "prefix": "The domain of the function is",
+                "slots": [
+                  {
+                    "id": "domain",
+                    "group": "set"
+                  },
+                  {
+                    "separator": "and the range is"
+                  },
+                  {
+                    "id": "range",
+                    "group": "set"
+                  }
+                ]
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "Equations:",
+                "group": "equation",
+                "tokens": [
+                  {
+                    "value": "x_eq_0",
+                    "group": "equation",
+                    "html": "x = 0"
+                  },
+                  {
+                    "value": "y_eq_0",
+                    "group": "equation",
+                    "html": "y = 0"
+                  },
+                  {
+                    "value": "x_eq_1",
+                    "group": "equation",
+                    "html": "x = 1"
+                  },
+                  {
+                    "value": "y_eq_1",
+                    "group": "equation",
+                    "html": "y = 1"
+                  }
+                ]
+              },
+              {
+                "label": "Sets:",
+                "group": "set",
+                "tokens": [
+                  {
+                    "value": "x_neq_0",
+                    "group": "set",
+                    "html": "{x | x \u2260 0, x \u2208 \u211d}"
+                  },
+                  {
+                    "value": "y_neq_0",
+                    "group": "set",
+                    "html": "{y | y \u2260 0, y \u2208 \u211d}"
+                  },
+                  {
+                    "value": "x_all_reals",
+                    "group": "set",
+                    "html": "{x \u2208 \u211d}"
+                  },
+                  {
+                    "value": "y_all_reals",
+                    "group": "set",
+                    "html": "{y \u2208 \u211d}"
+                  }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "va": "x_eq_0",
+              "ha": "y_eq_0",
+              "domain": "x_neq_0",
+              "range": "y_neq_0"
+            },
+            "successText": "The function y = 1/x cannot have x = 0 (division by zero is undefined) and y = 0 (1/x can never equal zero). These are its vertical and horizontal asymptotes.",
+            "nextLabel": "Finish Exploration \u2192"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,254 @@
+{
+  "schemaVersion": "1",
+  "title": "Preview of a Few New Functions \u2013 y = x\u00b3 and y = \u221ax",
+  "pages": [
+    {
+      "type": "applet",
+      "showProgress": false,
+      "showTitle": false,
+      "showFooter": false,
+      "ui": {
+        "layout": {
+          "preset": "ppt1080p",
+          "overflowPolicy": "scroll",
+          "safePadding": "4px",
+          "contentPadding": "4px"
+        }
+      },
+      "grid": {
+        "xmin": -5,
+        "xmax": 5,
+        "ymin": -8,
+        "ymax": 8
+      },
+      "interaction": {
+        "mode": "placePoints",
+        "snapStep": 1,
+        "hitRadiusPx": 20
+      },
+      "original": {
+        "curve": {
+          "fn": "x^3",
+          "domain": [-2, 2]
+        },
+        "points": [
+          [-2, -8],
+          [-1, -1],
+          [0, 0],
+          [1, 1],
+          [2, 8]
+        ]
+      },
+      "applet": {
+        "heading": "The Cubic Function",
+        "steps": [
+          {
+            "id": "q1",
+            "type": "table-input",
+            "questionLabel": "Question 1 (of 2)",
+            "instructions": "<strong>Complete</strong> the <strong>table of values</strong> on the left, and <strong>plot</strong> the points to <strong>sketch</strong> the graph of the function. <i>Use your graphing calculator to confirm.</i>",
+            "table": {
+              "xLabel": "x",
+              "yLabel": "y = x\u00b3",
+              "fn": "x^3",
+              "rows": [-2, -1, 0, 1, 2]
+            },
+            "plotAsEntered": true,
+            "graphButtonLabel": "Graph",
+            "successMessage": "CORRECT \u2014 Table complete and graph plotted!",
+            "nextLabel": "Continue to Part 2 \u2192"
+          },
+          {
+            "id": "q2",
+            "type": "drag-drop-sentences",
+            "questionLabel": "Question 2 (of 2)",
+            "instructions": "<strong>State</strong> the function\u2019s <strong>domain</strong> and <strong>range</strong>.",
+            "sentences": [
+              {
+                "prefix": "Domain:",
+                "slots": [{ "id": "domain", "group": "set" }],
+                "suffix": ""
+              },
+              {
+                "prefix": "Range:",
+                "slots": [{ "id": "range", "group": "set" }],
+                "suffix": ""
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "Sets:",
+                "group": "set",
+                "tokens": [
+                  { "value": "x_all_reals", "group": "set", "html": "{x \u2208 \u211d}" },
+                  { "value": "y_all_reals", "group": "set", "html": "{y \u2208 \u211d}" },
+                  { "value": "y_geq_0",     "group": "set", "html": "{y | y \u2265 0, y \u2208 \u211d}" },
+                  { "value": "x_geq_0",     "group": "set", "html": "{x | x \u2265 0, x \u2208 \u211d}" }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "domain": "x_all_reals",
+              "range": "y_all_reals"
+            },
+            "successText": "Both the domain and range of y = x\u00b3 are all real numbers. The cubic function is defined for every x-value and produces every y-value.",
+            "nextLabel": "Continue to Page 2 \u2192"
+          }
+        ]
+      }
+    },
+    {
+      "type": "applet",
+      "showProgress": false,
+      "showTitle": false,
+      "showFooter": false,
+      "ui": {
+        "layout": {
+          "preset": "ppt1080p",
+          "overflowPolicy": "scroll",
+          "safePadding": "4px",
+          "contentPadding": "4px"
+        }
+      },
+      "grid": {
+        "xmin": -1,
+        "xmax": 10,
+        "ymin": -5,
+        "ymax": 5
+      },
+      "interaction": {
+        "mode": "placePoints",
+        "snapStep": 1,
+        "hitRadiusPx": 20
+      },
+      "original": {
+        "curve": {
+          "fn": "sqrt(x)",
+          "domain": [0, 9]
+        },
+        "points": [
+          [0, 0],
+          [1, 1],
+          [4, 2],
+          [9, 3]
+        ]
+      },
+      "transform": {
+        "type": "translate",
+        "dx": 0,
+        "dy": -4
+      },
+      "activity": {
+        "type": "transformations",
+        "activityModule": "../activities/transformations.js",
+        "config": {
+          "tolerance": 0,
+          "requireExactCount": true
+        }
+      },
+      "feedback": {
+        "showExpectedPointsOnFail": false
+      },
+      "applet": {
+        "heading": "The Radical Function",
+        "graphLabels": {
+          "original": "y = \u221ax",
+          "transformed": "y = \u221ax \u2212 4"
+        },
+        "steps": [
+          {
+            "id": "q1",
+            "type": "table-input",
+            "questionLabel": "Question 1 (of 4)",
+            "instructions": "<strong>Complete</strong> the <strong>table of values</strong> on the left and <strong>plot</strong> the points to <strong>sketch</strong> the function. <i>Use your graphing calculator to confirm.</i>",
+            "table": {
+              "xLabel": "x",
+              "yLabel": "y = \u221ax",
+              "fn": "sqrt(x)",
+              "rows": [-1, 0, 1, 4, 9]
+            },
+            "plotAsEntered": true,
+            "graphButtonLabel": "Graph",
+            "successMessage": "CORRECT \u2014 Table complete and graph plotted!",
+            "nextLabel": "Continue to Part 2 \u2192"
+          },
+          {
+            "id": "q2",
+            "type": "drag-drop-sentences",
+            "questionLabel": "Question 2 (of 4)",
+            "instructions": "<strong>State</strong> the <strong>domain</strong> and <strong>range</strong> of <strong>y = \u221ax</strong>.",
+            "sentences": [
+              {
+                "prefix": "Domain:",
+                "slots": [{ "id": "domain", "group": "set" }],
+                "suffix": ""
+              },
+              {
+                "prefix": "Range:",
+                "slots": [{ "id": "range", "group": "set" }],
+                "suffix": ""
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "Sets:",
+                "group": "set",
+                "tokens": [
+                  { "value": "x_geq_0",     "group": "set", "html": "{x | x \u2265 0, x \u2208 \u211d}" },
+                  { "value": "y_geq_0",     "group": "set", "html": "{y | y \u2265 0, y \u2208 \u211d}" },
+                  { "value": "y_geq_neg4",  "group": "set", "html": "{y | y \u2265 \u22124, y \u2208 \u211d}" },
+                  { "value": "x_all_reals", "group": "set", "html": "{x \u2208 \u211d}" }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "domain": "x_geq_0",
+              "range": "y_geq_0"
+            },
+            "successText": "The domain is x \u2265 0 because you cannot take the square root of a negative number. The range is y \u2265 0 because the square root is never negative.",
+            "nextLabel": "Continue to Part 3 \u2192"
+          },
+          {
+            "id": "q3",
+            "type": "drag-drop-sentences",
+            "questionLabel": "Question 3 (of 4)",
+            "instructions": "Compare the table of values for <strong>y = \u221ax</strong> with the table for <strong>y = x\u00b2</strong>. What do you notice?",
+            "sentences": [
+              {
+                "prefix": "I notice that the",
+                "slots": [{ "id": "observation", "group": "obs" }],
+                "suffix": "."
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "Choose one:",
+                "group": "obs",
+                "tokens": [
+                  { "value": "coords_interchanged", "group": "obs", "html": "coordinates (x, y) are interchanged" },
+                  { "value": "y_values_equal",      "group": "obs", "html": "y-values are identical" },
+                  { "value": "x_values_doubled",    "group": "obs", "html": "x-values are doubled" },
+                  { "value": "graphs_congruent",    "group": "obs", "html": "graphs are congruent" }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "observation": "coords_interchanged"
+            },
+            "successText": "The table for y = \u221ax has the x and y columns of y = x\u00b2 swapped \u2014 for example, (3, 9) on y = x\u00b2 corresponds to (9, 3) on y = \u221ax. This means y = \u221ax is the inverse of y = x\u00b2: its graph is the reflection of y = x\u00b2 over the line y = x.",
+            "nextLabel": "Continue to Part 4 \u2192"
+          },
+          {
+            "id": "q4",
+            "type": "graph-plot",
+            "questionLabel": "Question 4 (of 4)",
+            "instructions": "On the same grid, <strong>sketch the graph</strong> of <strong>y = \u221ax \u2212 4</strong>. State the <strong>domain</strong> and <strong>range</strong> of this new function.",
+            "successMessage": "CORRECT \u2014 Your graph is bang on!",
+            "explanation": "<p>Each point (x, y) on y = \u221ax maps to (x, y \u2212 4) on y = \u221ax \u2212 4 \u2014 the y-coordinate decreases by 4 while the x-coordinate stays the same.</p><p><strong>Domain:</strong> {x | x \u2265 0, x \u2208 \u211d} \u2014 unchanged by the vertical shift.<br><strong>Range:</strong> {y | y \u2265 \u22124, y \u2208 \u211d} \u2014 the minimum y-value shifts from 0 to \u22124.</p>",
+            "nextLabel": "Finish Exploration \u2192"
+          }
+        ]
+      }
+    }
+  ]
+}

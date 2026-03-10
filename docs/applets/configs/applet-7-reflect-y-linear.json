@@ -1,0 +1,233 @@
+{
+  "schemaVersion": "1",
+  "title": "Reflect Across the Y-Axis (Linear)",
+  "pages": [
+    {
+      "type": "applet",
+      "showProgress": false,
+      "showTitle": false,
+      "showFooter": false,
+      "ui": {
+        "layout": {
+          "preset": "ppt1080p",
+          "overflowPolicy": "scroll",
+          "safePadding": "4px",
+          "contentPadding": "4px"
+        }
+      },
+      "grid": {
+        "xmin": -6,
+        "xmax": 6,
+        "ymin": -6,
+        "ymax": 6
+      },
+      "interaction": {
+        "mode": "placePoints",
+        "snapStep": 1,
+        "hitRadiusPx": 20
+      },
+      "original": {
+        "points": [
+          [
+            -5,
+            -4
+          ],
+          [
+            -2,
+            -2
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            6,
+            -4
+          ]
+        ],
+        "connectLines": true
+      },
+      "transform": {
+        "type": "reflect_y"
+      },
+      "activity": {
+        "type": "transformations",
+        "activityModule": "../activities/transformations.js",
+        "config": {
+          "tolerance": 0,
+          "requireExactCount": true
+        }
+      },
+      "feedback": {
+        "showExpectedPointsOnFail": false
+      },
+      "applet": {
+        "heading": "Reflection in the y-axis",
+        "progressLabel": "Exploration 2",
+        "graphLabels": {
+          "original": "y = f(x)",
+          "transformed": "y = h(x)"
+        },
+        "steps": [
+          {
+            "id": "q1",
+            "type": "graph-plot",
+            "questionLabel": "Question 1 (of 3)",
+            "instructions": "Sketch the mirror image graph, this time reflected in the <strong>y-axis</strong>.",
+            "successMessage": "CORRECT - Your graph is bang on!",
+            "explanation": "<p>Notice how the x-coordinate of all points on the transformed graph h(x) are the <i>negative</i> of the x-coordinate on f(x), while the y-coordinate stays the same.</p><p>This is a <b>horizontal reflection</b> about the y-axis.</p>",
+            "nextLabel": "Continue to Part 2 →"
+          },
+          {
+            "id": "q2",
+            "type": "drag-drop-mapping",
+            "questionLabel": "Question 2",
+            "instructions": "State the <b>mapping rule</b> from <strong>y = f(x)</strong> to <strong>y = h(x)</strong>.",
+            "slots": [
+              {
+                "id": "x",
+                "label": "NEW X"
+              },
+              {
+                "id": "y",
+                "label": "NEW Y"
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "X-values",
+                "group": "x",
+                "tokens": [
+                  {
+                    "value": "x",
+                    "group": "x"
+                  },
+                  {
+                    "value": "−x",
+                    "group": "x"
+                  }
+                ]
+              },
+              {
+                "label": "Y-values",
+                "group": "y",
+                "tokens": [
+                  {
+                    "value": "y",
+                    "group": "y"
+                  },
+                  {
+                    "value": "−y",
+                    "group": "y"
+                  }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "x": "−x",
+              "y": "y"
+            },
+            "hint": "Check how the x-values change.",
+            "successText": "Each x-coordinate is replaced by its opposite, while y stays the same.",
+            "nextLabel": "Continue to Part 3 →"
+          },
+          {
+            "id": "q3",
+            "type": "drag-drop-sentences",
+            "questionLabel": "Question 3",
+            "instructions": "<strong>Drag &amp; drop</strong> to complete each statement about the invariant point.",
+            "sentences": [
+              {
+                "prefix": "The point on both graphs is",
+                "slots": [
+                  {
+                    "id": "p1",
+                    "group": "point"
+                  }
+                ],
+                "suffix": "."
+              },
+              {
+                "prefix": "It has the same",
+                "slots": [
+                  {
+                    "id": "coordType",
+                    "group": "coordType"
+                  },
+                  {
+                    "separator": ", which is"
+                  },
+                  {
+                    "id": "value",
+                    "group": "value"
+                  }
+                ],
+                "suffix": "."
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "Points:",
+                "group": "point",
+                "source": "computed:invariant-points",
+                "distractors": [
+                  [
+                    -2,
+                    -2
+                  ],
+                  [
+                    3,
+                    3
+                  ]
+                ]
+              },
+              {
+                "label": "Type:",
+                "group": "coordType",
+                "tokens": [
+                  {
+                    "value": "x-coordinate",
+                    "group": "coordType"
+                  },
+                  {
+                    "value": "y-coordinate",
+                    "group": "coordType"
+                  }
+                ]
+              },
+              {
+                "label": "Value:",
+                "group": "value",
+                "tokens": [
+                  {
+                    "value": "0",
+                    "group": "value"
+                  },
+                  {
+                    "value": "−2",
+                    "group": "value"
+                  },
+                  {
+                    "value": "3",
+                    "group": "value"
+                  }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "p1": "computed:invariant-point",
+              "coordType": "x-coordinate",
+              "value": "0"
+            },
+            "successText": "A reflection in the y-axis keeps y-values the same. Points on the y-axis have x = 0, so they share the same x-coordinate, which is 0.",
+            "nextLabel": "Finish Exploration →"
+          }
+        ]
+      }
+    }
+  ]
+}

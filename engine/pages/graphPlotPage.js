@@ -1,7 +1,7 @@
 import { PAGE_TYPES } from "./pageTypes.js";
 import { renderPrompt } from "./basePage.js";
-import { render } from "../renderer.js";
-import { attachGraphInteraction } from "../interaction.js";
+import { render } from "../renderers/renderer.js";
+import { attachGraphInteraction } from "../core/interaction.js";
 
 export const graphPlotPage = {
   type: PAGE_TYPES.GRAPH_PLOT,

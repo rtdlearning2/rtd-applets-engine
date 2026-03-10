@@ -1,0 +1,255 @@
+{
+  "schemaVersion": "1",
+  "title": "Vertical Reflections \u2013 y = f(x) = (x \u2212 3)\u00b2",
+  "pages": [
+    {
+      "type": "applet",
+      "showProgress": false,
+      "showTitle": false,
+      "showFooter": false,
+      "ui": {
+        "layout": {
+          "preset": "ppt1080p",
+          "overflowPolicy": "scroll",
+          "safePadding": "4px",
+          "contentPadding": "4px"
+        }
+      },
+      "grid": {
+        "xmin": -1,
+        "xmax": 8,
+        "ymin": -9,
+        "ymax": 9
+      },
+      "interaction": {
+        "mode": "placePoints",
+        "snapStep": 1,
+        "hitRadiusPx": 20
+      },
+      "original": {
+        "curve": {
+          "fn": "(x-3)^2",
+          "domain": [
+            0,
+            6
+          ]
+        },
+        "points": [
+          [
+            0,
+            9
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            3,
+            0
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            5,
+            4
+          ],
+          [
+            6,
+            9
+          ]
+        ]
+      },
+      "transform": {
+        "type": "reflect_x"
+      },
+      "activity": {
+        "type": "transformations",
+        "activityModule": "../activities/transformations.js",
+        "config": {
+          "tolerance": 0,
+          "requireExactCount": true
+        }
+      },
+      "feedback": {
+        "showExpectedPointsOnFail": false
+      },
+      "applet": {
+        "heading": "Vertical Reflections",
+        "graphLabels": {
+          "original": "y = f(x)",
+          "transformed": "y = g(x)"
+        },
+        "steps": [
+          {
+            "id": "q1",
+            "type": "graph-plot",
+            "questionLabel": "Question 1 (of 4)",
+            "instructions": "The graph of <strong>f(x) = (x \u2212 3)\u00b2</strong> is shown. <strong>Sketch</strong> the mirror image of the graph, reflected in the <strong>x-axis</strong>. Be sure to indicate the placement of the <strong>7 indicated points</strong>.",
+            "successMessage": "CORRECT \u2014 Your graph is bang on!",
+            "nextLabel": "Continue to Part 2 \u2192"
+          },
+          {
+            "id": "q2",
+            "type": "drag-drop-mapping",
+            "questionLabel": "Question 2 (of 4)",
+            "instructions": "<strong>Describe</strong> how the coordinates change from the graph of <strong>y = f(x)</strong> to <strong>y = g(x)</strong>.",
+            "slots": [
+              {
+                "id": "x",
+                "label": "NEW X"
+              },
+              {
+                "id": "y",
+                "label": "NEW Y"
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "X-values:",
+                "group": "x",
+                "tokens": [
+                  {
+                    "value": "x",
+                    "group": "x"
+                  },
+                  {
+                    "value": "\u2212x",
+                    "group": "x"
+                  }
+                ]
+              },
+              {
+                "label": "Y-values:",
+                "group": "y",
+                "tokens": [
+                  {
+                    "value": "y",
+                    "group": "y"
+                  },
+                  {
+                    "value": "\u2212y",
+                    "group": "y"
+                  }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "x": "x",
+              "y": "\u2212y"
+            },
+            "successText": "Each point (x, y) on y = f(x) maps to (x, \u2212y) on y = g(x). The x-coordinate stays the same; the y-coordinate is negated.",
+            "nextLabel": "Continue to Part 3 \u2192"
+          },
+          {
+            "id": "q3",
+            "type": "drag-drop-sentences",
+            "questionLabel": "Question 3 (of 4)",
+            "instructions": "<strong>State</strong> the equation, in terms of x, of <strong>y = g(x)</strong>.",
+            "sentences": [
+              {
+                "prefix": "y = g(x) =",
+                "slots": [
+                  {
+                    "id": "equation",
+                    "group": "equation"
+                  }
+                ],
+                "suffix": ""
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "Choose the equation:",
+                "group": "equation",
+                "tokens": [
+                  {
+                    "value": "neg_x_minus_3_sq",
+                    "group": "equation",
+                    "html": "\u2212(x \u2212 3)\u00b2"
+                  },
+                  {
+                    "value": "x_plus_3_sq",
+                    "group": "equation",
+                    "html": "(x + 3)\u00b2"
+                  },
+                  {
+                    "value": "x_minus_3_sq",
+                    "group": "equation",
+                    "html": "(x \u2212 3)\u00b2"
+                  },
+                  {
+                    "value": "neg_x_plus_3_sq",
+                    "group": "equation",
+                    "html": "\u2212(x + 3)\u00b2"
+                  }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "equation": "neg_x_minus_3_sq"
+            },
+            "successText": "Reflecting in the x-axis negates all y-values, so we replace y with \u2212y. Starting from y = (x \u2212 3)\u00b2, we get \u2212y = (x \u2212 3)\u00b2, which gives y = \u2212(x \u2212 3)\u00b2.",
+            "nextLabel": "Continue to Part 4 \u2192"
+          },
+          {
+            "id": "q4",
+            "type": "drag-drop-sentences",
+            "questionLabel": "Question 4 (of 4)",
+            "instructions": "<strong>Explain</strong> how to change the equation of a function so that its graph is reflected about the x-axis.",
+            "sentences": [
+              {
+                "prefix": "To reflect a function\u2019s graph about the x-axis,",
+                "slots": [
+                  {
+                    "id": "rule",
+                    "group": "rule"
+                  }
+                ],
+                "suffix": "."
+              }
+            ],
+            "tokenBanks": [
+              {
+                "label": "Choose one:",
+                "group": "rule",
+                "tokens": [
+                  {
+                    "value": "negate_fn",
+                    "group": "rule",
+                    "html": "make the entire function negative"
+                  },
+                  {
+                    "value": "negate_x",
+                    "group": "rule",
+                    "html": "replace x with \u2212x in the equation"
+                  },
+                  {
+                    "value": "add_neg1",
+                    "group": "rule",
+                    "html": "add \u22121 to the function"
+                  },
+                  {
+                    "value": "mult_x_neg1",
+                    "group": "rule",
+                    "html": "multiply x by \u22121"
+                  }
+                ]
+              }
+            ],
+            "correctAnswer": {
+              "rule": "negate_fn"
+            },
+            "successText": "Making the entire function negative \u2014 equivalently, replacing y with \u2212y \u2014 reflects the graph over the x-axis. Every y-value changes sign while x stays fixed.",
+            "nextLabel": "Finish Exploration \u2192"
+          }
+        ]
+      }
+    }
+  ]
+}

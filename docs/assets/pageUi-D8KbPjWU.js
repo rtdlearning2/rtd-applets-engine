@@ -1,0 +1,1 @@
+const c=r=>{if(!r?.submitted)return"";const e=r.isCorrect?"success":"error",s=r.feedback??(r.isCorrect?"Correct.":"Not correct. Try again.");return`<div class="page-feedback ${e}">${s}</div>`},o=(r,e,s)=>{r.submitted=!0,r.isCorrect=!!e,r.feedback=r.isCorrect?"Correct.":"Not correct. Try again."};export{c as r,o as s};

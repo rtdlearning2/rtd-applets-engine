@@ -5,13 +5,13 @@ This project is a small, DOM-driven engine for interactive graph applets. Keep g
 1. Purpose & big picture
    - `activity/` contains the runnable app (HTML/CSS/JS). `activity/index.html` loads `activity/app.js` (module) which bootstraps the engine.
    - `engine/` contains the core: config loading/migrations (`configLoader.js`, `configMigrations.js`), state creation (`state.js`), rendering (`renderer.js`, `gridRenderer.js`, `seriesRenderer.js`), interaction (`interaction.js`), validation (`validator.js`), and transformation logic (`transformEngine.js`).
-   - Config JSONs (e.g. `engine/config/golden.json`, `config/sample-transform.json`) are loaded via a `?src=` URL parameter and normalized by the migration layer.
+   - Config JSONs (e.g. `applets/configs/golden.json`, `config/sample-transform.json`) are loaded via a `?src=` URL parameter and normalized by the migration layer.
 
 2. Quick dev/run (what actually works locally)
    - Install and run the dev server with Vite: `npm install` then `npm run dev` (package.json -> `dev: vite`).
    - Open the activity page with a src param pointing at a local config. Example (vite default port 5173):
 
-     http://localhost:5173/activity/index.html?src=/engine/config/golden.json
+     http://localhost:5173/activity/index.html?src=/applets/configs/golden.json
 
 3. Key patterns and conventions (explicit, reproducible)
    - ES module style across `engine/*.js` (use import/export). Keep code modular and avoid global state other than the `state` object returned by `createAppState`.
@@ -25,8 +25,8 @@ This project is a small, DOM-driven engine for interactive graph applets. Keep g
    - Configs may include `schemaVersion`; older layouts are normalized by `configMigrations.js`. When adding fields, prefer migrating via `configMigrations.js` so older configs remain compatible.
 
 5. Recommended edit/PR patterns for AI patches
-   - Small, focused changes. If changing how points are snapped/rounded, update `interaction.js`, `state.js` normalization (snapStep), and any sample configs in `engine/config/` to keep examples working.
-   - When adding features that change client-visible output (SVG shapes, labels), include a new example config under `engine/config/` and a brief note in `README.md`.
+   - Small, focused changes. If changing how points are snapped/rounded, update `interaction.js`, `state.js` normalization (snapStep), and any sample configs in `applets/configs/` to keep examples working.
+   - When adding features that change client-visible output (SVG shapes, labels), include a new example config under `applets/configs/` and a brief note in `README.md`.
    - Avoid introducing new global DOM listeners; `attachGraphInteraction` centralizes pointer handling.
 
 6. Helpful files to reference in patches
@@ -36,7 +36,7 @@ This project is a small, DOM-driven engine for interactive graph applets. Keep g
    - `engine/gridRenderer.js`, `engine/seriesRenderer.js` — SVG coordinate mapping and series rendering
    - `engine/interaction.js` — click → graph coordinate mapping and snapping rules
    - `engine/transformEngine.js` — source of truth for expected-point computation
-   - `engine/config/golden.json` — canonical example the app uses in docs
+   - `applets/configs/golden.json` — canonical example the app uses in docs
 
 7. What not to change without review
    - The integer-only rotation assumptions (rotate only 0/90/180/270) in `transformEngine.js` — authors explicitly rely on that.

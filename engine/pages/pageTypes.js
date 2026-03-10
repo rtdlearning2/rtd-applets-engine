@@ -9,5 +9,6 @@ export const PAGE_TYPES = {
   TRUE_FALSE_GRID: "true-false-grid",
   PROOF_STEPS: "proof-steps",
   GRAPH_IDENTIFY: "graph-identify",
-  TRANSFORMATION_BUILDER: "transformation-builder"
+  TRANSFORMATION_BUILDER: "transformation-builder",
+  APPLET: "applet"
 };

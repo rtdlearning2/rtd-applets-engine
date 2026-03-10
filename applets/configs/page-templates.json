@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "title": "Page Templates (Placeholder)",
+  "pages": [
+    {
+      "id": "p1",
+      "type": "drag-drop-fill",
+      "title": "Fill in the Rule",
+      "prompt": "Drag tokens into the blanks to complete the rule.",
+      "tokens": [
+        "x",
+        "-x",
+        "y",
+        "-y"
+      ],
+      "blanks": [
+        "newX",
+        "newY"
+      ],
+      "correctAnswers": {
+        "newX": "x",
+        "newY": "-y"
+      }
+    },
+    {
+      "id": "p3",
+      "type": "multiple-choice",
+      "title": "Choose the Statement",
+      "prompt": "Select the correct statement about the transformation.",
+      "choices": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "multiSelect": false,
+      "correctIndex": 1
+    },
+    {
+      "id": "p4",
+      "type": "sort-order",
+      "title": "Order the Steps",
+      "prompt": "Arrange the steps in the correct order.",
+      "items": [
+        "Step 1",
+        "Step 2",
+        "Step 3"
+      ],
+      "correctOrder": [
+        "Step 1",
+        "Step 2",
+        "Step 3"
+      ]
+    },
+    {
+      "id": "p5",
+      "type": "match-pairs",
+      "title": "Match the Pairs",
+      "prompt": "Match each expression to its graph.",
+      "leftItems": [
+        "f(x)",
+        "g(x)",
+        "h(x)"
+      ],
+      "rightItems": [
+        "Graph A",
+        "Graph B",
+        "Graph C"
+      ],
+      "correctPairs": {
+        "0": 0,
+        "1": 1,
+        "2": 2
+      }
+    },
+    {
+      "id": "p6",
+      "type": "numeric-input",
+      "title": "Numeric Response",
+      "prompt": "Enter the y-intercept.",
+      "unit": "units",
+      "correctValue": 0,
+      "tolerance": 0
+    },
+    {
+      "id": "p7",
+      "type": "table-complete",
+      "title": "Complete the Table",
+      "prompt": "Fill in the missing values.",
+      "columns": [
+        "x",
+        "f(x)"
+      ],
+      "rows": [
+        [
+          -2,
+          null
+        ],
+        [
+          0,
+          null
+        ],
+        [
+          2,
+          null
+        ]
+      ],
+      "correctRows": [
+        [
+          -2,
+          4
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          2,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "p8",
+      "type": "true-false-grid",
+      "title": "Quick Check",
+      "prompt": "Mark each statement true or false.",
+      "statements": [
+        "Statement 1",
+        "Statement 2"
+      ],
+      "correctAnswers": [
+        true,
+        false
+      ]
+    },
+    {
+      "id": "p9",
+      "type": "proof-steps",
+      "title": "Proof Outline",
+      "prompt": "Place the statements in a logical proof order.",
+      "steps": [
+        "Given",
+        "Because",
+        "Therefore"
+      ],
+      "correctOrder": [
+        "Given",
+        "Because",
+        "Therefore"
+      ]
+    },
+    {
+      "id": "p10",
+      "type": "graph-identify",
+      "title": "Identify Features",
+      "prompt": "Click all x-intercepts on the graph.",
+      "targets": [
+        "x-intercept",
+        "y-intercept",
+        "vertex"
+      ],
+      "correctTargets": [
+        "0"
+      ]
+    },
+    {
+      "id": "p11",
+      "type": "transformation-builder",
+      "title": "Build a Transformation",
+      "prompt": "Stack operations to transform f(x) into g(x).",
+      "operations": [
+        "reflect-x",
+        "reflect-y",
+        "translate",
+        "rotate",
+        "dilate"
+      ],
+      "correctOperations": [
+        "reflect-x",
+        "translate"
+      ]
+    }
+  ]
+}
