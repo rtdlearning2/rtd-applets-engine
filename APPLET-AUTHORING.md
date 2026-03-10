@@ -183,6 +183,8 @@ See **Section 10** for the quadratic-shift pattern details and **Section 11** fo
 
 `instructions` and `explanation` come directly from the image text. Use `<strong>`, `<i>`, `<b>`, `<p>` HTML tags.
 
+> **"Label the new graph …" belongs in `applet.graphLabels.transformed`**, not in `instructions`. If the image shows a prompt like "Label the new graph y = g(x)", set `graphLabels.transformed: "y = g(x)"` — the engine renders it as an axis label on the graph automatically.
+
 ### Step 2: `drag-drop-mapping`
 
 Maps `(x, y)` → `(NEW X, NEW Y)` using token banks.

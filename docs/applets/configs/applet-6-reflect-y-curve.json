@@ -79,7 +79,7 @@
             "id": "q1",
             "type": "graph-plot",
             "questionLabel": "Question 1 (of 3)",
-            "instructions": "Sketch the mirror image of the graph, reflected in the <strong>y-axis</strong>. Be sure to indicate the placement of the 4 indicated points. Label the new graph <strong>y = g(x)</strong>.",
+            "instructions": "Sketch the mirror image of the graph, reflected in the <strong>y-axis</strong>. Be sure to indicate the placement of the 4 indicated points.",
             "successMessage": "CORRECT - Your graph is bang on!",
             "explanation": "<p>Notice how the x-coordinate of all points on the transformed graph g(x) are the <i>negative</i> of the x-coordinate on f(x), while the y-coordinate stays the same.</p><p>This is a <b>horizontal reflection</b> about the y-axis.</p>",
             "nextLabel": "Continue to Part 2 →"
